@@ -1,0 +1,2013 @@
+ 
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>RRP Reformas — ERP Offline</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+  <style>
+    :root{
+      --bg:#eef4e8; --bg-2:#dfe8d2; --paper:rgba(255,255,255,.94);
+      --line:rgba(24,35,18,.12); --line-soft:rgba(24,35,18,.07);
+      --text:#142010; --muted:#5f6959; --title:#0e160c;
+      --primary:#5a8c35; --primary-2:#3f6d24;
+      --danger:#c0392b; --warning:#b7791f; --success:#1f8b5b; --info:#2c6fb7;
+      --shadow:0 24px 70px rgba(46,68,28,.12); --shadow-soft:0 12px 30px rgba(46,68,28,.08);
+      --radius-xl:28px; --max:1560px; --nav-h:88px;
+    }
+    *{box-sizing:border-box}
+    html{scroll-behavior:smooth}
+    body{
+      margin:0; min-height:100vh; color:var(--text); font-family:"Inter",sans-serif;
+      background:
+        radial-gradient(circle at 10% 10%, rgba(90,140,53,.10), transparent 24%),
+        radial-gradient(circle at 90% 14%, rgba(21,21,21,.06), transparent 18%),
+        linear-gradient(180deg, var(--bg), var(--bg-2));
+      overflow-x:hidden;
+    }
+    body::before{
+      content:""; position:fixed; inset:0; pointer-events:none;
+      background-image:
+        linear-gradient(rgba(24,35,18,.035) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(24,35,18,.035) 1px, transparent 1px);
+      background-size:28px 28px;
+      mask-image:linear-gradient(to bottom, rgba(0,0,0,.45), transparent 94%);
+      opacity:.35;
+    }
+    h1,h2,h3,h4,.brand{font-family:"Space Grotesk",sans-serif; letter-spacing:-.05em; margin:0; color:var(--title)}
+    p{margin:0}
+    button,input,select,textarea{font:inherit}
+    .container{width:min(calc(100% - 32px), var(--max));margin-inline:auto}
+    .topbar{
+      position:sticky; top:0; z-index:60; backdrop-filter:blur(14px);
+      background:linear-gradient(180deg, rgba(238,244,232,.92), rgba(238,244,232,.74));
+      border-bottom:1px solid var(--line-soft);
+    }
+    .topbar-inner{min-height:var(--nav-h); display:flex; align-items:center; justify-content:space-between; gap:18px}
+    .brand-wrap{display:flex;align-items:center;gap:14px}
+    .brand-text strong{display:block;font-size:1.18rem;line-height:1}
+    .brand-text span{
+      display:block; margin-top:4px; color:var(--muted); font-size:.82rem;
+      text-transform:uppercase; letter-spacing:.11em; font-weight:800;
+    }
+    .nav-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:flex-end}
+    .chip{
+      border:1px solid var(--line); background:rgba(255,255,255,.68); color:var(--muted);
+      border-radius:999px; padding:10px 14px; font-size:.82rem; font-weight:800;
+    }
+    .btn{
+      border:0; cursor:pointer; border-radius:999px; padding:13px 18px; font-weight:800;
+      transition:transform .18s ease, box-shadow .18s ease, background .18s ease, color .18s ease;
+      display:inline-flex; align-items:center; justify-content:center; gap:10px; min-height:48px;
+    }
+    .btn:hover{transform:translateY(-2px)}
+    .btn:active{transform:translateY(0) scale(.985)}
+    .btn-primary{color:#fff; background:linear-gradient(135deg, var(--primary), var(--primary-2)); box-shadow:0 18px 28px rgba(90,140,53,.22)}
+    .btn-secondary{color:var(--title); background:rgba(255,255,255,.82); border:1px solid var(--line); box-shadow:var(--shadow-soft)}
+    .btn-danger{color:#fff;background:linear-gradient(135deg, #c0392b, #a53125)}
+    main{padding:18px 0 70px}
+    .intro{
+      margin-top:8px; padding:22px; border-radius:var(--radius-xl); background:var(--paper);
+      border:1px solid rgba(255,255,255,.72); box-shadow:var(--shadow);
+    }
+    .intro h1{font-size:clamp(2rem, 5vw, 4rem);line-height:.95;max-width:14ch}
+    .intro p{margin-top:12px;color:var(--muted);max-width:90ch;line-height:1.7}
+    .tabs{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px}
+    .tab-btn{
+      border:1px solid var(--line); background:rgba(255,255,255,.76); color:var(--title);
+      border-radius:999px; padding:12px 16px; font-weight:800; cursor:pointer; transition:all .18s ease; min-height:46px;
+    }
+    .tab-btn.active{
+      background:linear-gradient(135deg, var(--primary), var(--primary-2)); color:#fff;
+      border-color:transparent; box-shadow:0 18px 28px rgba(90,140,53,.16)
+    }
+    .section{margin-top:22px}
+    .section-head{display:flex; align-items:end; justify-content:space-between; gap:18px; flex-wrap:wrap; margin-bottom:14px}
+    .section-head h2{font-size:clamp(1.7rem, 3vw, 2.8rem);line-height:.95}
+    .section-head p{color:var(--muted);max-width:80ch;line-height:1.65}
+    .tab-panel{display:none}
+    .tab-panel.active{display:block}
+    .layout-2{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+    .form-panel,.table-wrap,.preview-wrap{
+      background:var(--paper); border:1px solid rgba(255,255,255,.72); box-shadow:var(--shadow);
+      border-radius:var(--radius-xl); padding:20px; overflow:hidden;
+    }
+    .panel-header{
+      display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; margin-bottom:16px;
+    }
+    .panel-header h3{font-size:1.12rem}
+    .form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+    .field{display:grid;gap:8px}
+    .field.full{grid-column:1/-1}
+    .field label{
+      color:var(--muted); font-size:.78rem; text-transform:uppercase; letter-spacing:.11em; font-weight:800
+    }
+    .input,.select{
+      width:100%; min-height:52px; border-radius:14px; border:1px solid var(--line);
+      background:rgba(255,255,255,.92); color:var(--text); padding:0 14px; outline:none;
+      transition:border-color .2s ease, box-shadow .2s ease
+    }
+    .input:focus,.select:focus{border-color:var(--primary); box-shadow:0 0 0 4px rgba(90,140,53,.08)}
+    textarea.input{min-height:110px;padding:14px;resize:vertical}
+    .calc-box{
+      min-height:52px; border-radius:14px; border:1px solid rgba(90,140,53,.14);
+      background:linear-gradient(180deg, rgba(90,140,53,.06), rgba(255,255,255,.8));
+      display:flex; align-items:center; justify-content:space-between; padding:0 14px; gap:12px; font-weight:800; color:var(--title)
+    }
+    .toolbar{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}
+    .table-scroll{overflow:auto;border-radius:18px;border:1px solid var(--line-soft);background:rgba(255,255,255,.65)}
+    table{width:100%;border-collapse:collapse;min-width:980px}
+    th,td{text-align:left;padding:14px;border-bottom:1px solid var(--line-soft);vertical-align:middle}
+    th{
+      font-size:.76rem; text-transform:uppercase; letter-spacing:.11em; color:var(--muted);
+      font-weight:800; background:rgba(255,255,255,.94); position:sticky; top:0; z-index:1
+    }
+    td strong{display:block;font-size:.95rem}
+    td small{display:block;margin-top:4px;color:var(--muted);font-size:.81rem}
+    .pill{
+      border-radius:999px; padding:8px 10px; font-size:.74rem; font-weight:800;
+      text-transform:uppercase; letter-spacing:.08em; white-space:nowrap; display:inline-block
+    }
+    .pill.low{background:rgba(192,57,43,.12);color:var(--danger)}
+    .pill.ok{background:rgba(31,139,91,.12);color:var(--success)}
+    .pill.warn{background:rgba(183,121,31,.14);color:var(--warning)}
+    .pill.info{background:rgba(44,111,183,.12);color:var(--info)}
+    .metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+    .metric{
+      padding:16px; border-radius:18px; border:1px solid var(--line-soft);
+      background:linear-gradient(180deg, rgba(255,255,255,.88), rgba(255,255,255,.66))
+    }
+    .metric span{
+      display:block; color:var(--muted); font-size:.78rem; font-weight:800;
+      text-transform:uppercase; letter-spacing:.09em; margin-bottom:8px
+    }
+    .metric strong{
+      display:block; font-family:"Space Grotesk",sans-serif; font-size:1.7rem; line-height:1; letter-spacing:-.05em
+    }
+    .warning-banner{
+      padding:16px; border-radius:18px; background:linear-gradient(180deg, rgba(192,57,43,.09), rgba(255,255,255,.6));
+      border:1px solid rgba(192,57,43,.14); margin-bottom:16px
+    }
+    .brand-logo{
+      width:72px;height:72px;border-radius:20px;overflow:hidden;background:#fff;
+      display:grid;place-items:center;border:1px solid rgba(0,0,0,.06);
+      box-shadow:0 14px 28px rgba(0,0,0,.08);flex:0 0 auto;
+    }
+    .brand-logo img{width:100%;height:100%;display:block;background:#fff;object-fit:contain}
+    .brand-logo.large{width:132px;height:132px;border-radius:26px;box-shadow:0 24px 50px rgba(0,0,0,.10)}
+    .login-shell{min-height:100vh;display:grid;place-items:center;padding:24px}
+    .login-card{
+      width:min(100%, 980px);
+      display:grid;
+      grid-template-columns:.95fr 1.05fr;
+      gap:18px;
+      align-items:stretch
+    }
+    .login-panel,.login-side{
+      background:var(--paper);border:1px solid rgba(255,255,255,.72);box-shadow:var(--shadow);
+      border-radius:32px;padding:28px;position:relative;overflow:hidden;
+    }
+    .login-panel{display:flex;flex-direction:column;justify-content:center;gap:18px}
+    .login-panel-top{display:flex;flex-direction:column;align-items:flex-start;gap:16px}
+    .login-side{
+      background:
+        radial-gradient(circle at 20% 20%, rgba(90,140,53,.16), transparent 28%),
+        radial-gradient(circle at 80% 20%, rgba(0,0,0,.08), transparent 20%),
+        linear-gradient(180deg, rgba(255,255,255,.96), rgba(245,249,239,.92));
+    }
+    .login-side h1{font-size:clamp(2.2rem, 5vw, 4.2rem);line-height:.92;max-width:8ch}
+    .login-side p{margin-top:14px;color:var(--muted);line-height:1.7}
+    .login-kicker{
+      display:inline-flex;align-items:center;gap:8px;border:1px solid var(--line);border-radius:999px;
+      padding:9px 12px;font-size:.8rem;color:var(--muted);font-weight:800;background:rgba(255,255,255,.72);
+    }
+    .login-bullets{margin-top:26px;display:grid;gap:12px}
+    .login-bullet{
+      display:flex;gap:12px;align-items:flex-start;padding:14px 16px;border-radius:18px;
+      border:1px solid var(--line-soft);background:rgba(255,255,255,.78);
+    }
+    .login-dot{
+      width:12px;height:12px;border-radius:50%;background:linear-gradient(135deg, var(--primary), var(--primary-2));margin-top:4px;flex:0 0 auto;
+    }
+    .login-panel h2{font-size:clamp(1.7rem, 3vw, 2.5rem);line-height:.95}
+    .login-panel p{color:var(--muted);line-height:1.7}
+    .login-form{display:grid;gap:14px}
+    .login-error{
+      display:none;padding:12px 14px;border-radius:14px;border:1px solid rgba(192,57,43,.18);
+      background:rgba(192,57,43,.08);color:var(--danger);font-weight:700;font-size:.92rem;
+    }
+    .login-error.show{display:block}
+    .login-demo{
+      padding:14px 16px;border-radius:18px;background:rgba(90,140,53,.08);
+      border:1px solid rgba(90,140,53,.16);color:var(--text);font-size:.93rem;line-height:1.65;
+    }
+    .app-shell{display:none}
+    .app-shell.active{display:block}
+    .search-wrap{display:flex;gap:10px;flex-wrap:wrap;width:100%}
+    .search-wrap .input{min-width:240px}
+    .actions-inline{display:flex;gap:8px;flex-wrap:wrap}
+    .mini-btn{
+      border:1px solid var(--line);background:#fff;color:var(--title);border-radius:999px;
+      padding:8px 12px;font-size:.78rem;font-weight:800;cursor:pointer;
+    }
+    .mini-btn:hover{opacity:.88}
+    .status-box{
+      padding:14px 16px;border-radius:16px;border:1px solid var(--line-soft);background:rgba(255,255,255,.8);line-height:1.55;
+    }
+    .logo-upload-box{
+      padding:16px;border-radius:18px;border:1px dashed rgba(90,140,53,.28);
+      background:rgba(90,140,53,.05);
+    }
+    @media (max-width: 1150px){.layout-2,.metrics{grid-template-columns:1fr}}
+    @media (max-width: 980px){.login-card{grid-template-columns:1fr}}
+    @media (max-width: 860px){.form-grid{grid-template-columns:1fr}}
+    @media (max-width: 760px){
+      :root{--nav-h:78px}
+      .topbar-inner{padding:14px 0;flex-direction:column;align-items:flex-start}
+      .nav-actions{width:100%;justify-content:flex-start}
+      .intro,.form-panel,.table-wrap,.preview-wrap,.login-panel,.login-side{border-radius:24px}
+      table{min-width:720px}
+      .brand-logo.large{width:108px;height:108px}
+    }
+  </style>
+</head>
+<body>
+
+  <section class="login-shell" id="loginScreen">
+    <div class="login-card">
+      <div class="login-panel">
+        <div class="login-panel-top">
+          <div class="brand-logo large" aria-label="Logo da empresa">
+            <img class="rrp-logo-img" alt="Logo da empresa">
+          </div>
+          <div>
+            <h2>Entrar no sistema</h2>
+            <p id="loginSubtitle">Área de acesso da empresa.</p>
+          </div>
+        </div>
+
+        <form class="login-form" id="loginForm">
+          <div class="field">
+            <label for="loginUser">Usuário</label>
+            <input class="input" id="loginUser" type="text" placeholder="Digite seu usuário" required>
+          </div>
+          <div class="field">
+            <label for="loginPass">Senha</label>
+            <input class="input" id="loginPass" type="password" placeholder="Digite sua senha" required>
+          </div>
+          <div class="login-error" id="loginError">Usuário ou senha incorretos.</div>
+          <button type="submit" class="btn btn-primary" style="width:100%">Entrar</button>
+        </form>
+
+        <div class="login-demo" id="loginHintBox">
+          <strong>Login padrão para teste:</strong><br>
+          Usuário: <strong>admin</strong><br>
+          Senha: <strong>1234</strong>
+        </div>
+      </div>
+
+      <div class="login-side">
+        <div class="login-kicker">ERP offline personalizável</div>
+        <h1 id="loginSideTitle">Gestão da empresa.</h1>
+        <p>
+          Estoque corrigido, PDF pelo histórico e configurações editáveis.
+        </p>
+
+        <div class="login-bullets">
+          <div class="login-bullet">
+            <div class="login-dot"></div>
+            <div><strong>Estoque certo</strong><br><span style="color:var(--muted)">A quantidade digitada já entra no estoque.</span></div>
+          </div>
+          <div class="login-bullet">
+            <div class="login-dot"></div>
+            <div><strong>PDF depois</strong><br><span style="color:var(--muted)">Salvou hoje, gera o PDF depois pelo histórico.</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="app-shell" id="appShell">
+    <header class="topbar">
+      <div class="container topbar-inner">
+        <div class="brand-wrap">
+          <div class="brand-logo" aria-label="Logo da empresa">
+            <img class="rrp-logo-img" alt="Logo da empresa">
+          </div>
+          <div class="brand-text">
+            <strong class="brand" id="brandNameTop">RRP Reformas</strong>
+            <span id="brandSubtitleTop">clientes, obras, estoque, documentos e financeiro</span>
+          </div>
+        </div>
+        <div class="nav-actions">
+          <div class="chip" id="loggedUserChip">Usuário: admin</div>
+          <button class="btn btn-secondary" id="goDocsBtn" type="button">Emitir documento</button>
+          <button class="btn btn-danger" id="logoutBtn" type="button">Sair</button>
+        </div>
+      </div>
+    </header>
+
+    <main class="container">
+      <section class="intro">
+        <h1 id="heroTitle">Painel completo da empresa.</h1>
+        <p id="heroText">Sistema offline com tudo salvo localmente no aparelho/computador.</p>
+
+        <div class="tabs">
+          <button class="tab-btn active" type="button" data-tab="tab-clientes">Clientes</button>
+          <button class="tab-btn" type="button" data-tab="tab-obras">Gerenciamento de Obras</button>
+          <button class="tab-btn" type="button" data-tab="tab-materiais">Novo Material</button>
+          <button class="tab-btn" type="button" data-tab="tab-movimentos">Movimentações / Vendas</button>
+          <button class="tab-btn" type="button" data-tab="tab-estoque">Estoque</button>
+          <button class="tab-btn" type="button" data-tab="tab-cupom">Documentos / PDF</button>
+          <button class="tab-btn" type="button" data-tab="tab-financeiro">Financeiro Detalhado</button>
+          <button class="tab-btn" type="button" data-tab="tab-config">Configurações</button>
+        </div>
+      </section>
+
+      <section class="section">
+        <div id="tab-clientes" class="tab-panel active">
+          <div class="section-head">
+            <div>
+              <h2>Cadastro de clientes</h2>
+              <p>Cadastre o cliente uma vez e use depois em obras e documentos.</p>
+            </div>
+          </div>
+
+          <div class="layout-2">
+            <form class="form-panel" id="clientForm">
+              <div class="panel-header"><h3>Novo cliente</h3></div>
+              <input type="hidden" id="clientEditId">
+              <div class="form-grid">
+                <div class="field"><label for="cliNome">Nome do cliente</label><input class="input" id="cliNome" type="text" required placeholder="Ex.: Joãozinho da Silva"></div>
+                <div class="field"><label for="cliDoc">CPF / CNPJ</label><input class="input" id="cliDoc" type="text" required placeholder="Ex.: 12.345.678/0001-99"></div>
+                <div class="field full"><label for="cliEndereco">Endereço</label><input class="input" id="cliEndereco" type="text" required placeholder="Ex.: Rua X, nº 000, Bairro"></div>
+                <div class="field"><label for="cliCidade">Cidade</label><input class="input" id="cliCidade" type="text" placeholder="Ex.: Rio de Janeiro"></div>
+                <div class="field"><label for="cliTelefone">Telefone</label><input class="input" id="cliTelefone" type="text" placeholder="Ex.: (21) 99999-9999"></div>
+                <div class="field full"><label for="cliObs">Observações</label><input class="input" id="cliObs" type="text" placeholder="Ex.: cliente recorrente"></div>
+              </div>
+              <div class="toolbar">
+                <button type="submit" class="btn btn-primary" id="clientSubmitBtn">Salvar cliente</button>
+                <button type="button" class="btn btn-secondary" id="cancelClientEditBtn" style="display:none;">Cancelar edição</button>
+              </div>
+            </form>
+
+            <div class="table-wrap">
+              <div class="panel-header"><h3>Clientes salvos</h3></div>
+              <div class="search-wrap" style="margin-bottom:12px;">
+                <input class="input" id="clientSearchInput" type="text" placeholder="Buscar por nome, CPF ou CNPJ">
+              </div>
+              <div class="table-scroll">
+                <table>
+                  <thead><tr><th>Cliente</th><th>Documento</th><th>Contato</th><th>Obras</th><th>Ações</th></tr></thead>
+                  <tbody id="clientsTable"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div id="tab-obras" class="tab-panel">
+          <div class="section-head">
+            <div>
+              <h2>Gerenciamento de obras</h2>
+              <p>Controle início, término, valor, custo e lucro total da obra.</p>
+            </div>
+          </div>
+
+          <div class="layout-2">
+            <form class="form-panel" id="workForm">
+              <div class="panel-header"><h3>Nova obra</h3></div>
+              <input type="hidden" id="workEditId">
+              <div class="form-grid">
+                <div class="field"><label for="obraClienteSelect">Cliente vinculado</label><select class="select" id="obraClienteSelect" required><option value="">Selecione um cliente</option></select></div>
+                <div class="field"><label for="obraTituloInput">Nome da obra</label><input class="input" id="obraTituloInput" type="text" required placeholder="Ex.: Reforma da Farmácia"></div>
+                <div class="field"><label for="obraInicioInput">Data de início</label><input class="input" id="obraInicioInput" type="date" required></div>
+                <div class="field"><label for="obraFimInput">Data de término</label><input class="input" id="obraFimInput" type="date" required></div>
+                <div class="field"><label for="obraValorInput">Valor cobrado (R$)</label><input class="input" id="obraValorInput" type="number" min="0" step="0.01" required placeholder="Ex.: 100000"></div>
+                <div class="field"><label for="obraCustoInput">Custo da obra (R$)</label><input class="input" id="obraCustoInput" type="number" min="0" step="0.01" required placeholder="Ex.: 70000"></div>
+                <div class="field"><label>Lucro previsto</label><div class="calc-box"><strong id="obraLucroPreview">R$ 0,00</strong></div></div>
+                <div class="field"><label>Status de prazo</label><div class="calc-box"><strong id="obraPrazoPreview">—</strong></div></div>
+                <div class="field full"><label for="obraObsInput">Observações da obra</label><textarea class="input" id="obraObsInput" placeholder="Ex.: prazo contratual, detalhes do serviço"></textarea></div>
+              </div>
+              <div class="toolbar">
+                <button type="submit" class="btn btn-primary" id="workSubmitBtn">Salvar obra</button>
+                <button type="button" class="btn btn-secondary" id="cancelWorkEditBtn" style="display:none;">Cancelar edição</button>
+              </div>
+            </form>
+
+            <div class="table-wrap">
+              <div class="panel-header"><h3>Obras salvas</h3></div>
+              <div id="worksAlertBanner" class="warning-banner" style="display:none"></div>
+              <div class="table-scroll">
+                <table>
+                  <thead><tr><th>Obra</th><th>Cliente</th><th>Prazo</th><th>Valor</th><th>Custo</th><th>Lucro</th><th>Ações</th></tr></thead>
+                  <tbody id="worksTable"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div id="tab-materiais" class="tab-panel">
+          <div class="section-head">
+            <div>
+              <h2>Novo material</h2>
+              <p>A quantidade digitada entra direto no estoque.</p>
+            </div>
+          </div>
+
+          <div class="layout-2">
+            <form class="form-panel" id="materialForm">
+              <div class="panel-header"><h3 id="materialFormTitle">Cadastrar material</h3></div>
+              <input type="hidden" id="materialEditId">
+              <div class="form-grid">
+                <div class="field"><label for="matNome">Material</label><input class="input" id="matNome" type="text" required placeholder="Ex.: Hélices"></div>
+                <div class="field"><label for="matUnidade">Unidade</label><input class="input" id="matUnidade" type="text" required placeholder="Ex.: unidade, caixa, pacote"></div>
+                <div class="field"><label for="matQtd">Quantidade</label><input class="input" id="matQtd" type="number" min="0" step="1" required placeholder="Ex.: 100"></div>
+                <div class="field"><label for="matCusto">Custo unitário (R$)</label><input class="input" id="matCusto" type="number" min="0" step="0.01" required placeholder="Ex.: 5700"></div>
+                <div class="field"><label for="matVenda">Valor de venda (R$)</label><input class="input" id="matVenda" type="number" min="0" step="0.01" required placeholder="Ex.: 7000"></div>
+                <div class="field"><label for="matMinimo">Estoque mínimo</label><input class="input" id="matMinimo" type="number" min="0" step="1" required placeholder="Ex.: 20"></div>
+                <div class="field"><label>Lucro unitário potencial</label><div class="calc-box"><strong id="matLucroUnitPreview">R$ 0,00</strong></div></div>
+                <div class="field"><label>Valor inicial em estoque</label><div class="calc-box"><strong id="matValorInicialPreview">R$ 0,00</strong></div></div>
+                <div class="field full"><label for="matObs">Observação</label><input class="input" id="matObs" type="text" placeholder="Ex.: lote reservado para licitação"></div>
+              </div>
+              <div class="toolbar">
+                <button type="submit" class="btn btn-primary" id="materialSubmitBtn">Salvar material</button>
+                <button type="button" class="btn btn-secondary" id="cancelMaterialEditBtn" style="display:none;">Cancelar edição</button>
+              </div>
+            </form>
+
+            <div class="table-wrap">
+              <div class="panel-header"><h3>Materiais cadastrados</h3></div>
+              <div class="table-scroll">
+                <table>
+                  <thead><tr><th>Material</th><th>Qtd Atual</th><th>Custo Unit.</th><th>Venda Unit.</th><th>Total Estoque</th><th>Ações</th></tr></thead>
+                  <tbody id="materialsTable"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div id="tab-movimentos" class="tab-panel">
+          <div class="section-head">
+            <div>
+              <h2>Movimentações / Vendas</h2>
+              <p>Entradas somam estoque. Saídas e vendas reduzem estoque.</p>
+            </div>
+          </div>
+
+          <div class="layout-2">
+            <form class="form-panel" id="movementForm">
+              <div class="panel-header"><h3>Novo lançamento</h3></div>
+              <div class="form-grid">
+                <div class="field"><label for="tipo">Tipo</label><select class="select" id="tipo" required><option value="entrada">Entrada</option><option value="saida">Saída</option><option value="venda">Venda</option></select></div>
+                <div class="field"><label for="materialSelect">Material</label><select class="select" id="materialSelect" required><option value="">Selecione um material</option></select></div>
+                <div class="field"><label for="quantidade">Quantidade desta operação</label><input class="input" id="quantidade" type="number" min="1" step="1" required placeholder="Ex.: 50"></div>
+                <div class="field"><label>Saldo atual no estoque</label><div class="calc-box"><strong id="saldoPreview">0</strong></div></div>
+                <div class="field"><label for="nota">Referência / N° Nota</label><input class="input" id="nota" type="text" required placeholder="Ex.: LIC-001"></div>
+                <div class="field"><label for="dataMov">Data</label><input class="input" id="dataMov" type="date" required></div>
+                <div class="field full"><label for="fornecedor">Origem / destino</label><input class="input" id="fornecedor" type="text" required placeholder="Ex.: Órgão X, Fornecedor Y"></div>
+                <div class="field"><label>Total financeiro da operação</label><div class="calc-box"><strong id="totalPreview">R$ 0,00</strong></div></div>
+                <div class="field"><label>Lucro gerado</label><div class="calc-box"><strong id="lucroMovPreview">R$ 0,00</strong></div></div>
+              </div>
+              <div class="toolbar">
+                <button type="submit" class="btn btn-primary">Salvar movimentação</button>
+              </div>
+            </form>
+
+            <div class="table-wrap">
+              <div class="panel-header"><h3>Histórico</h3></div>
+              <div class="table-scroll">
+                <table>
+                  <thead><tr><th>Material</th><th>Tipo</th><th>Qtd</th><th>Total</th><th>Lucro</th><th>Ref.</th></tr></thead>
+                  <tbody id="movementsTable"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div id="tab-estoque" class="tab-panel">
+          <div class="section-head">
+            <div>
+              <h2>Estoque total</h2>
+              <p>Resumo real de tudo que você possui hoje no estoque.</p>
+            </div>
+          </div>
+
+          <div id="lowStockBanner" class="warning-banner" style="display:none"></div>
+
+          <div class="metrics" style="margin-bottom:18px;">
+            <div class="metric"><span>Valor total do estoque</span><strong id="stockValueTop">R$ 0,00</strong></div>
+            <div class="metric"><span>Lucro potencial total</span><strong id="stockProfitTop">R$ 0,00</strong></div>
+            <div class="metric"><span>Quantidade física total</span><strong id="stockQtyTop">0</strong></div>
+            <div class="metric"><span>Itens cadastrados</span><strong id="stockItemsTop">0</strong></div>
+          </div>
+
+          <div class="table-wrap">
+            <div class="table-scroll">
+              <table>
+                <thead><tr><th>Material</th><th>Qtd</th><th>Custo Unit.</th><th>Venda Unit.</th><th>Valor em Estoque</th><th>Lucro Potencial</th><th>Status</th><th>Ações</th></tr></thead>
+                <tbody id="stockTable"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <div id="tab-cupom" class="tab-panel">
+          <div class="section-head">
+            <div>
+              <h2>Documentos / PDF</h2>
+              <p>Você pode salvar e gerar o PDF depois pelo histórico.</p>
+            </div>
+          </div>
+
+          <div class="layout-2">
+            <div class="form-panel">
+              <form id="couponForm">
+                <div class="panel-header"><h3>Dados do documento</h3></div>
+                <input type="hidden" id="couponEditId">
+                <div class="form-grid">
+                  <div class="field"><label for="documentType">Tipo PDF</label><select class="select" id="documentType"><option value="Orçamento">Orçamento</option><option value="Recibo de Venda/Serviço">Recibo de Venda/Serviço</option><option value="Comprovante de Serviço">Comprovante de Serviço</option></select></div>
+                  <div class="field"><label for="documentNumber">Número</label><input class="input" id="documentNumber" type="text" placeholder="Ex.: 001"></div>
+                  <div class="field"><label for="docClientSelect">Puxar cliente cadastrado</label><select class="select" id="docClientSelect"><option value="">Selecione...</option></select></div>
+                  <div class="field"><label for="docWorkSelect">Puxar obra cadastrada</label><select class="select" id="docWorkSelect"><option value="">Selecione...</option></select></div>
+                  <div class="field"><label for="clienteNome">Nome do cliente</label><input class="input" id="clienteNome" type="text" required placeholder="Ex.: Farmácia Central"></div>
+                  <div class="field"><label for="clienteCnpj">CPF / CNPJ</label><input class="input" id="clienteCnpj" type="text" required placeholder="Ex.: 12.345.678/0001-99"></div>
+                  <div class="field full"><label for="clienteEndereco">Endereço</label><input class="input" id="clienteEndereco" type="text" required placeholder="Ex.: Av. Principal, 1200, Centro"></div>
+                  <div class="field"><label for="obraTitulo">Referência / título</label><input class="input" id="obraTitulo" type="text" placeholder="Ex.: Reforma interna"></div>
+                  <div class="field"><label for="fechamentoData">Data</label><input class="input" id="fechamentoData" type="date" required></div>
+                  <div class="field"><label for="valorRecebido">Valor fechado</label><input class="input" id="valorRecebido" type="number" min="0" step="0.01" placeholder="Ex.: 1500"></div>
+                  <div class="field full"><label for="descricaoServico">Descrição</label><textarea class="input" id="descricaoServico" required placeholder="Descreva o serviço executado ou a proposta"></textarea></div>
+                </div>
+
+                <div class="panel-header" style="margin-top:18px;"><h3>Tabela (Orçamento e Recibo)</h3></div>
+                <div class="form-grid">
+                  <div class="field"><label for="itemDescricao">Item</label><input class="input" id="itemDescricao" type="text" placeholder="Ex.: Mão de obra"></div>
+                  <div class="field"><label for="itemQtd">Qtd</label><input class="input" id="itemQtd" type="number" min="1" step="1" placeholder="Ex.: 1"></div>
+                  <div class="field"><label for="itemValor">Valor</label><input class="input" id="itemValor" type="number" min="0" step="0.01" placeholder="Ex.: 4500"></div>
+                </div>
+                <div class="toolbar"><button type="button" class="btn btn-secondary" id="addCouponItemBtn">Inserir na tabela</button></div>
+
+                <div class="table-scroll" style="margin-top:14px;">
+                  <table>
+                    <thead><tr><th>Descrição</th><th>Qtd</th><th>Subtotal</th><th>Ações</th></tr></thead>
+                    <tbody id="couponItemsTable"></tbody>
+                  </table>
+                </div>
+
+                <div class="toolbar">
+                  <button type="submit" class="btn btn-primary" id="saveCouponBtn">Salvar documento</button>
+                  <button type="button" class="btn btn-secondary" id="generatePdfRealBtn">Gerar PDF agora</button>
+                  <button type="button" class="btn btn-secondary" id="clearCouponDraftBtn">Limpar formulário</button>
+                </div>
+              </form>
+            </div>
+
+            <div class="preview-wrap">
+              <div class="panel-header"><h3>Histórico de emissões</h3></div>
+              <div class="status-box" style="margin-bottom:18px;">
+                <strong>Fluxo novo:</strong><br>
+                você pode salvar agora e baixar o PDF depois pelo histórico.
+              </div>
+              <div class="table-scroll">
+                <table>
+                  <thead><tr><th>Cliente</th><th>Tipo</th><th>Referência</th><th>Data</th><th>Ações</th></tr></thead>
+                  <tbody id="savedCouponsTable"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div id="tab-financeiro" class="tab-panel">
+          <div class="section-head">
+            <div>
+              <h2>Financeiro detalhado</h2>
+              <p>Receita de obras, vendas, compras de estoque e custos extras por mês.</p>
+            </div>
+          </div>
+
+          <div class="metrics" style="margin-bottom:18px;">
+            <div class="metric"><span>Receita mensal</span><strong id="monthReceita">R$ 0,00</strong></div>
+            <div class="metric"><span>Despesa mensal</span><strong id="monthDespesas">R$ 0,00</strong></div>
+            <div class="metric"><span>Lucro líquido</span><strong id="monthLucro">R$ 0,00</strong></div>
+            <div class="metric"><span>Obras em alerta</span><strong id="monthWorksAlert">0</strong></div>
+          </div>
+
+          <div class="layout-2">
+            <form class="form-panel" id="expenseForm">
+              <div class="panel-header"><h3>Novo custo extra</h3></div>
+              <input type="hidden" id="expenseEditId">
+              <div class="form-grid">
+                <div class="field full"><label for="expDesc">Descrição</label><input class="input" id="expDesc" type="text" required placeholder="Ex.: aluguel, luz, funcionário"></div>
+                <div class="field"><label for="expValor">Valor</label><input class="input" id="expValor" type="number" min="0.01" step="0.01" required placeholder="Ex.: 5000"></div>
+                <div class="field"><label for="expData">Data</label><input class="input" id="expData" type="date" required></div>
+              </div>
+              <div class="toolbar">
+                <button type="submit" class="btn btn-danger" id="expenseSubmitBtn">Salvar custo</button>
+                <button type="button" class="btn btn-secondary" id="cancelExpenseEditBtn" style="display:none;">Cancelar</button>
+              </div>
+            </form>
+
+            <div class="table-wrap">
+              <div class="panel-header"><h3>Custos extras</h3></div>
+              <div class="table-scroll">
+                <table>
+                  <thead><tr><th>Descrição</th><th>Valor</th><th>Data</th><th>Ações</th></tr></thead>
+                  <tbody id="expensesTable"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <div class="table-wrap" style="margin-top:18px;">
+            <div class="panel-header"><h3>Balanço mensal</h3></div>
+            <div class="table-scroll">
+              <table>
+                <thead><tr><th>Mês</th><th>Receita Obras</th><th>Receita Vendas</th><th>Compras Estoque</th><th>Custo Obras</th><th>Custos Extras</th><th>Lucro</th></tr></thead>
+                <tbody id="financeTable"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <div id="tab-config" class="tab-panel">
+          <div class="section-head">
+            <div>
+              <h2>Configurações</h2>
+              <p>Personalize nome, logo, dados da empresa e acesso do sistema.</p>
+            </div>
+          </div>
+
+          <div class="layout-2">
+            <form class="form-panel" id="settingsForm">
+              <div class="panel-header"><h3>Dados da empresa e acesso</h3></div>
+              <div class="form-grid">
+                <div class="field"><label for="cfgCompanyName">Nome da empresa</label><input class="input" id="cfgCompanyName" type="text" required placeholder="Ex.: RRP Reformas"></div>
+                <div class="field"><label for="cfgResponsible">Responsável</label><input class="input" id="cfgResponsible" type="text" required placeholder="Ex.: Areli B. Pereira"></div>
+                <div class="field"><label for="cfgCnpj">CNPJ</label><input class="input" id="cfgCnpj" type="text" placeholder="Ex.: 23.015.372/0001-97"></div>
+                <div class="field"><label for="cfgContact">Contato</label><input class="input" id="cfgContact" type="text" placeholder="Ex.: (21) 99999-9999"></div>
+                <div class="field"><label for="cfgAddress">Endereço</label><input class="input" id="cfgAddress" type="text" placeholder="Ex.: Rua X, nº 000"></div>
+                <div class="field"><label for="cfgCity">Cidade</label><input class="input" id="cfgCity" type="text" placeholder="Ex.: Rio de Janeiro"></div>
+                <div class="field"><label for="cfgUser">Usuário de acesso</label><input class="input" id="cfgUser" type="text" required placeholder="Ex.: admin"></div>
+                <div class="field"><label for="cfgPass">Nova senha</label><input class="input" id="cfgPass" type="password" required placeholder="Ex.: 1234"></div>
+                <div class="field"><label for="cfgPassConfirm">Confirmar senha</label><input class="input" id="cfgPassConfirm" type="password" required placeholder="Repita a senha"></div>
+                <div class="field full">
+                  <label for="cfgLogoFile">Logo da empresa</label>
+                  <div class="logo-upload-box">
+                    <input id="cfgLogoFile" type="file" accept="image/*" class="input" style="padding:12px;height:auto;">
+                    <small style="color:var(--muted);display:block;margin-top:8px;">Se não escolher nenhuma, o sistema tenta usar a Logo.png local.</small>
+                  </div>
+                </div>
+              </div>
+              <div class="toolbar">
+                <button type="submit" class="btn btn-primary">Salvar configurações</button>
+                <button type="button" class="btn btn-secondary" id="removeCustomLogoBtn">Remover logo personalizada</button>
+              </div>
+            </form>
+
+            <div class="preview-wrap">
+              <div class="panel-header"><h3>Prévia</h3></div>
+              <div class="status-box">
+                <strong>Essas informações aparecerão em:</strong><br>
+                • Tela de login<br>
+                • Topo do sistema<br>
+                • PDFs emitidos<br>
+                • Login e senha de acesso
+              </div>
+
+              <div style="margin-top:18px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;">
+                <div class="brand-logo large">
+                  <img class="rrp-logo-img" alt="Prévia da logo">
+                </div>
+                <div>
+                  <h3 id="cfgPreviewName">RRP Reformas</h3>
+                  <p id="cfgPreviewMeta" style="color:var(--muted);margin-top:8px;">Responsável e dados da empresa</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    const firebaseConfig = {
+  apiKey: "AIzaSyAG2XJSA_v_4a890Zg9a82ULLHdSC7qH4Y",
+  authDomain: "rrp-nuvem.firebaseapp.com",
+  projectId: "rrp-nuvem",
+  storageBucket: "rrp-nuvem.firebasestorage.app",
+  messagingSenderId: "847031473630",
+  appId: "1:847031473630:web:008f0a0be5d093b274f94f"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+let isSyncingFromCloud = false;
+
+db.collection("erp_data").doc("main_store").onSnapshot((docSnapshot) => {
+  if(docSnapshot.exists) {
+    isSyncingFromCloud = true;
+    const data = docSnapshot.data();
+    if(data.materiais) localStorage.setItem(MATERIALS_KEY, JSON.stringify(data.materiais));
+    if(data.movimentos) localStorage.setItem(MOVEMENTS_KEY, JSON.stringify(data.movimentos));
+    if(data.cupons) localStorage.setItem(COUPONS_KEY, JSON.stringify(data.cupons));
+    if(data.despesas) localStorage.setItem(EXPENSES_KEY, JSON.stringify(data.despesas));
+    if(data.clientes) localStorage.setItem(CLIENTS_KEY, JSON.stringify(data.clientes));
+    if(data.obras) localStorage.setItem(WORKS_KEY, JSON.stringify(data.obras));
+    
+    const session = getJson(SESSION_KEY, null);
+    if(session && session.logged) { renderAll(); }
+    isSyncingFromCloud = false;
+  } else {
+    // Se a nuvem estiver vazia, sobe o que você já tem no celular
+    db.collection("erp_data").doc("main_store").set({
+      materiais: getJson(MATERIALS_KEY, []),
+      movimentos: getJson(MOVEMENTS_KEY, []),
+      cupons: getJson(COUPONS_KEY, []),
+      despesas: getJson(EXPENSES_KEY, []),
+      clientes: getJson(CLIENTS_KEY, []),
+      obras: getJson(WORKS_KEY, [])
+    }, { merge: true });
+  }
+});
+    const MATERIALS_KEY = "rrp_materiais_v102";
+    const MOVEMENTS_KEY = "rrp_movimentos_v102";
+    const COUPONS_KEY = "rrp_cupons_v102";
+    const EXPENSES_KEY = "rrp_despesas_v102";
+    const SESSION_KEY = "rrp_session_v102";
+    const CLIENTS_KEY = "rrp_clientes_v102";
+    const WORKS_KEY = "rrp_obras_v102";
+    const SETTINGS_KEY = "rrp_settings_v102";
+
+    const DEFAULT_SETTINGS = {
+      companyName: "RRP Reformas",
+      responsible: "Areli B. Pereira",
+      cnpj: "23.015.372/0001-97",
+      contact: "(21) 99760-21126",
+      address: "Rio de Janeiro - RJ",
+      city: "Rio de Janeiro",
+      username: "admin",
+      password: "1234",
+      logoDataUrl: "",
+      fallbackLogo: "Logo.png"
+    };
+
+    let draftCouponItems = [];
+    let globalLogoBase64 = null;
+
+    const brl = (value) => Number(value || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+
+    function todayISO(){
+      const now = new Date();
+      const offset = now.getTimezoneOffset();
+      const local = new Date(now.getTime() - offset * 60000);
+      return local.toISOString().slice(0,10);
+    }
+
+    function formatDate(dateStr){
+      if(!dateStr) return "—";
+      const [y,m,d] = dateStr.split("-");
+      if(!y || !m || !d) return dateStr;
+      return `${d}/${m}/${y}`;
+    }
+
+    function formatDateLong(dateStr){
+      if(!dateStr) return "—";
+      const [y,m,d] = dateStr.split("-");
+      const meses = ["janeiro","fevereiro","março","abril","maio","junho","julho","agosto","setembro","outubro","novembro","dezembro"];
+      return `${d} de ${meses[Number(m)-1]} de ${y}`;
+    }
+
+    function monthKey(dateStr){
+      if(!dateStr || !dateStr.includes("-")) return "Sem data";
+      const [y,m] = dateStr.split("-");
+      return `${m}/${y}`;
+    }
+
+    function escapeHtml(text){
+      return String(text ?? "").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;").replaceAll("'","&#039;");
+    }
+
+    function parseIntegerInput(value){
+      if(value === null || value === undefined) return 0;
+      const cleaned = String(value).replace(/[^\d-]/g, "");
+      const parsed = parseInt(cleaned || "0", 10);
+      return Number.isFinite(parsed) ? parsed : 0;
+    }
+
+    function parseMoneyInput(value){
+      if(value === null || value === undefined || value === "") return 0;
+      const raw = String(value).trim();
+      if(!raw) return 0;
+      if(raw.includes(",") && raw.includes(".")){
+        const normalized = raw.replace(/\./g, "").replace(",", ".");
+        const parsed = Number(normalized);
+        return Number.isFinite(parsed) ? parsed : 0;
+      }
+      if(raw.includes(",")){
+        const normalized = raw.replace(",", ".");
+        const parsed = Number(normalized);
+        return Number.isFinite(parsed) ? parsed : 0;
+      }
+      const parsed = Number(raw);
+      return Number.isFinite(parsed) ? parsed : 0;
+    }
+
+    function getJson(key, fallback){ try{return JSON.parse(localStorage.getItem(key)) ?? fallback}catch(e){return fallback} }
+    function setJson(key, value){
+  localStorage.setItem(key, JSON.stringify(value));
+  if (isSyncingFromCloud) return;
+
+  const fieldMap = {
+    [MATERIALS_KEY]: 'materiais',
+    [MOVEMENTS_KEY]: 'movimentos',
+    [COUPONS_KEY]: 'cupons',
+    [EXPENSES_KEY]: 'despesas',
+    [CLIENTS_KEY]: 'clientes',
+    [WORKS_KEY]: 'obras',
+    [SETTINGS_KEY]: 'settings'
+  };
+  
+  const field = fieldMap[key];
+  if(field && typeof db !== "undefined") {
+    db.collection("erp_data").doc("main_store").set({ [field]: value }, { merge: true });
+  }
+}
+
+    const getMaterials = () => getJson(MATERIALS_KEY, []);
+    const setMaterials = v => setJson(MATERIALS_KEY, v);
+    const getMovements = () => getJson(MOVEMENTS_KEY, []);
+    const setMovements = v => setJson(MOVEMENTS_KEY, v);
+    const getCoupons = () => getJson(COUPONS_KEY, []);
+    const setCoupons = v => setJson(COUPONS_KEY, v);
+    const getExpenses = () => getJson(EXPENSES_KEY, []);
+    const setExpenses = v => setJson(EXPENSES_KEY, v);
+    const getClients = () => getJson(CLIENTS_KEY, []);
+    const setClients = v => setJson(CLIENTS_KEY, v);
+    const getWorks = () => getJson(WORKS_KEY, []);
+    const setWorks = v => setJson(WORKS_KEY, v);
+    const getSettings = () => ({ ...DEFAULT_SETTINGS, ...getJson(SETTINGS_KEY, {}) });
+    const setSettings = v => setJson(SETTINGS_KEY, { ...getSettings(), ...v });
+
+    function getCompany(){
+      const s = getSettings();
+      return {
+        nome: s.companyName,
+        responsavel: s.responsible,
+        cnpj: s.cnpj,
+        contato: s.contact,
+        endereco: s.address,
+        cidade: s.city
+      };
+    }
+
+    async function preloadLogoForPdf(){
+      return new Promise((resolve) => {
+        const settings = getSettings();
+        if(settings.logoDataUrl){
+          globalLogoBase64 = settings.logoDataUrl;
+          resolve();
+          return;
+        }
+        const img = new Image();
+        img.onload = function(){
+          try{
+            const canvas = document.createElement("canvas");
+            canvas.width = img.naturalWidth;
+            canvas.height = img.naturalHeight;
+            const ctx = canvas.getContext("2d");
+            ctx.drawImage(img, 0, 0);
+            globalLogoBase64 = canvas.toDataURL("image/png");
+          }catch(e){
+            globalLogoBase64 = null;
+          }
+          resolve();
+        };
+        img.onerror = function(){
+          globalLogoBase64 = null;
+          resolve();
+        };
+        img.src = settings.fallbackLogo || "Logo.png";
+      });
+    }
+
+    function applyBranding(){
+      const s = getSettings();
+      const logoSrc = s.logoDataUrl || s.fallbackLogo || "Logo.png";
+
+      document.querySelectorAll(".rrp-logo-img").forEach(img => {
+        img.src = logoSrc;
+        img.onerror = function(){
+          this.removeAttribute("src");
+        };
+      });
+
+      document.getElementById("brandNameTop").textContent = s.companyName || "Empresa";
+      document.getElementById("heroTitle").textContent = `Painel completo da ${s.companyName || "empresa"}.`;
+      document.getElementById("loginSideTitle").textContent = `Gestão da ${s.companyName || "empresa"}.`;
+      document.getElementById("cfgPreviewName").textContent = s.companyName || "Empresa";
+      document.getElementById("cfgPreviewMeta").textContent = `${s.responsible || ""} • ${s.contact || ""} • ${s.city || ""}`;
+      document.getElementById("loginSubtitle").textContent = `Área de acesso da ${s.companyName || "empresa"}.`;
+    }
+
+    function fillSettingsForm(){
+      const s = getSettings();
+      document.getElementById("cfgCompanyName").value = s.companyName || "";
+      document.getElementById("cfgResponsible").value = s.responsible || "";
+      document.getElementById("cfgCnpj").value = s.cnpj || "";
+      document.getElementById("cfgContact").value = s.contact || "";
+      document.getElementById("cfgAddress").value = s.address || "";
+      document.getElementById("cfgCity").value = s.city || "";
+      document.getElementById("cfgUser").value = s.username || "";
+      document.getElementById("cfgPass").value = s.password || "";
+      document.getElementById("cfgPassConfirm").value = s.password || "";
+    }
+
+    function showApp(user){
+      document.getElementById("loginScreen").style.display = "none";
+      document.getElementById("appShell").classList.add("active");
+      document.getElementById("loggedUserChip").textContent = `Usuário: ${user}`;
+    }
+
+    function showLogin(){
+      document.getElementById("loginScreen").style.display = "";
+      document.getElementById("appShell").classList.remove("active");
+      const s = getSettings();
+      document.getElementById("loginHintBox").innerHTML = `<strong>Login atual:</strong><br>Usuário: <strong>${escapeHtml(s.username)}</strong><br>Senha: <strong>${escapeHtml(s.password)}</strong>`;
+    }
+
+    document.getElementById("loginForm").addEventListener("submit", (e) => {
+      e.preventDefault();
+      const user = document.getElementById("loginUser").value.trim();
+      const pass = document.getElementById("loginPass").value.trim();
+      const error = document.getElementById("loginError");
+      const s = getSettings();
+
+      if(user === s.username && pass === s.password){
+        error.classList.remove("show");
+        setJson(SESSION_KEY, { logged: true, user });
+        renderAll();
+        showApp(user);
+      }else{
+        error.classList.add("show");
+      }
+    });
+
+    document.getElementById("logoutBtn").addEventListener("click", () => {
+      localStorage.removeItem(SESSION_KEY);
+      document.getElementById("loginForm").reset();
+      document.getElementById("loginError").classList.remove("show");
+      applyBranding();
+      showLogin();
+    });
+
+    function activateTab(tabId){
+      document.querySelectorAll(".tab-btn").forEach(btn => btn.classList.toggle("active", btn.dataset.tab === tabId));
+      document.querySelectorAll(".tab-panel").forEach(panel => panel.classList.toggle("active", panel.id === tabId));
+    }
+
+    document.querySelectorAll(".tab-btn").forEach(btn => {
+      btn.addEventListener("click", () => activateTab(btn.dataset.tab));
+    });
+
+    function computeWorkStatus(startDate, endDate){
+      if(!startDate || !endDate) return { label: "Sem prazo", type: "info" };
+      const today = new Date(todayISO() + "T12:00:00");
+      const end = new Date(endDate + "T12:00:00");
+      const diff = Math.ceil((end - today) / (1000 * 60 * 60 * 24));
+      if(diff < 0) return { label: `Atrasada ${Math.abs(diff)} dia(s)`, type: "low" };
+      if(diff <= 10) return { label: `Faltam ${diff} dia(s)`, type: "warn" };
+      return { label: `No prazo (${diff} dia(s))`, type: "ok" };
+    }
+
+    function computeStock(){
+      return getMaterials().map(item => {
+        const qtd = parseIntegerInput(item.qtd);
+        const custo = parseMoneyInput(item.custo);
+        const venda = parseMoneyInput(item.venda);
+        const minimo = parseIntegerInput(item.minimo);
+        const lucroUnit = venda - custo;
+        return {
+          ...item, qtd, custo, venda, minimo, lucroUnit,
+          valorTotal: qtd * custo,
+          lucroPotencial: qtd * lucroUnit,
+          low: qtd <= minimo
+        };
+      }).sort((a,b) => a.nome.localeCompare(b.nome, "pt-BR"));
+    }
+
+    function findClientById(id){ return getClients().find(item => String(item.id) === String(id)); }
+    function findWorkById(id){ return getWorks().find(item => String(item.id) === String(id)); }
+    function findMaterialById(id){ return getMaterials().find(item => String(item.id) === String(id)); }
+    function findCouponById(id){ return getCoupons().find(item => String(item.id) === String(id)); }
+
+    function refreshClientSelects(){
+      const clients = getClients().sort((a,b) => a.nome.localeCompare(b.nome, "pt-BR"));
+      const html = `<option value="">Selecione...</option>` + clients.map(c => `<option value="${c.id}">${escapeHtml(c.nome)} — ${escapeHtml(c.doc)}</option>`).join("");
+      const obra = document.getElementById("obraClienteSelect");
+      const doc = document.getElementById("docClientSelect");
+      if(obra){ const v=obra.value; obra.innerHTML = html; if([...obra.options].some(o=>o.value===v)) obra.value=v; }
+      if(doc){ const v=doc.value; doc.innerHTML = html; if([...doc.options].some(o=>o.value===v)) doc.value=v; }
+    }
+
+    function refreshWorkSelects(){
+      const works = getWorks().sort((a,b) => a.titulo.localeCompare(b.titulo, "pt-BR"));
+      const html = `<option value="">Selecione...</option>` + works.map(w => `<option value="${w.id}">${escapeHtml(w.titulo)} — ${escapeHtml(w.clienteNome)}</option>`).join("");
+      const doc = document.getElementById("docWorkSelect");
+      if(doc){ const v=doc.value; doc.innerHTML = html; if([...doc.options].some(o=>o.value===v)) doc.value=v; }
+    }
+
+    function refreshMaterialSelects(){
+      const materials = computeStock();
+      const html = `<option value="">Selecione um material</option>` + materials.map(m => `<option value="${m.id}">${escapeHtml(m.nome)} — saldo ${m.qtd}</option>`).join("");
+      const sel = document.getElementById("materialSelect");
+      if(sel){ const v=sel.value; sel.innerHTML = html; if([...sel.options].some(o=>o.value===v)) sel.value=v; }
+    }
+
+    function renderClientsTable(){
+      const term = (document.getElementById("clientSearchInput").value || "").toLowerCase();
+      const clients = getClients().sort((a,b) => a.nome.localeCompare(b.nome, "pt-BR"));
+      const works = getWorks();
+      const filtered = clients.filter(c => !term || String(c.nome).toLowerCase().includes(term) || String(c.doc).toLowerCase().includes(term));
+      const tbody = document.getElementById("clientsTable");
+      tbody.innerHTML = filtered.length ? filtered.map(c => `
+        <tr>
+          <td><strong>${escapeHtml(c.nome)}</strong><small>${escapeHtml(c.endereco || "")}</small></td>
+          <td>${escapeHtml(c.doc)}</td>
+          <td>${escapeHtml(c.telefone || "—")}</td>
+          <td>${works.filter(w => String(w.clienteId) === String(c.id)).length}</td>
+          <td>
+            <div class="actions-inline">
+              <button type="button" class="mini-btn" onclick="editClient(${c.id})">Editar</button>
+              <button type="button" class="mini-btn" onclick="useClient(${c.id})">Usar</button>
+              <button type="button" class="mini-btn" style="color:#c0392b" onclick="delClient(${c.id})">Apagar</button>
+            </div>
+          </td>
+        </tr>
+      `).join("") : `<tr><td colspan="5">Nenhum cliente encontrado.</td></tr>`;
+    }
+
+    window.editClient = (id) => {
+      const c = findClientById(id); if(!c) return;
+      document.getElementById("clientEditId").value = c.id;
+      document.getElementById("cliNome").value = c.nome || "";
+      document.getElementById("cliDoc").value = c.doc || "";
+      document.getElementById("cliEndereco").value = c.endereco || "";
+      document.getElementById("cliCidade").value = c.cidade || "";
+      document.getElementById("cliTelefone").value = c.telefone || "";
+      document.getElementById("cliObs").value = c.obs || "";
+      document.getElementById("cancelClientEditBtn").style.display = "inline-flex";
+      document.getElementById("clientSubmitBtn").textContent = "Atualizar cliente";
+      activateTab("tab-clientes");
+    };
+
+    window.useClient = (id) => {
+      document.getElementById("docClientSelect").value = String(id);
+      applySelectedClientToDoc();
+      activateTab("tab-cupom");
+    };
+
+    window.delClient = (id) => {
+      if(!confirm("Deseja apagar esse cliente?")) return;
+      setClients(getClients().filter(c => Number(c.id) !== Number(id)));
+      setWorks(getWorks().filter(w => Number(w.clienteId) !== Number(id)));
+      renderAll();
+    };
+
+    document.getElementById("clientForm").addEventListener("submit", (e) => {
+      e.preventDefault();
+      const editId = document.getElementById("clientEditId").value;
+      const obj = {
+        id: editId ? Number(editId) : Date.now(),
+        nome: document.getElementById("cliNome").value.trim(),
+        doc: document.getElementById("cliDoc").value.trim(),
+        endereco: document.getElementById("cliEndereco").value.trim(),
+        cidade: document.getElementById("cliCidade").value.trim(),
+        telefone: document.getElementById("cliTelefone").value.trim(),
+        obs: document.getElementById("cliObs").value.trim()
+      };
+      const arr = getClients();
+      if(editId){
+        const idx = arr.findIndex(x => Number(x.id) === Number(editId));
+        if(idx !== -1) arr[idx] = obj;
+      }else{ arr.push(obj); }
+      setClients(arr);
+      document.getElementById("clientForm").reset();
+      document.getElementById("clientEditId").value = "";
+      document.getElementById("cancelClientEditBtn").style.display = "none";
+      document.getElementById("clientSubmitBtn").textContent = "Salvar cliente";
+      renderAll();
+    });
+
+    document.getElementById("cancelClientEditBtn").addEventListener("click", () => {
+      document.getElementById("clientForm").reset();
+      document.getElementById("clientEditId").value = "";
+      document.getElementById("cancelClientEditBtn").style.display = "none";
+      document.getElementById("clientSubmitBtn").textContent = "Salvar cliente";
+    });
+
+    document.getElementById("clientSearchInput").addEventListener("input", renderClientsTable);
+
+    function renderWorksTable(){
+      const works = getWorks().sort((a,b) => a.fim < b.fim ? -1 : 1);
+      const tbody = document.getElementById("worksTable");
+      tbody.innerHTML = works.length ? works.map(w => {
+        const status = computeWorkStatus(w.inicio, w.fim);
+        const lucro = parseMoneyInput(w.valor) - parseMoneyInput(w.custo);
+        return `
+          <tr>
+            <td><strong>${escapeHtml(w.titulo)}</strong></td>
+            <td>${escapeHtml(w.clienteNome)}</td>
+            <td><span class="pill ${status.type}">${status.label}</span><small>${formatDate(w.inicio)} até ${formatDate(w.fim)}</small></td>
+            <td>${brl(w.valor)}</td>
+            <td>${brl(w.custo)}</td>
+            <td>${brl(lucro)}</td>
+            <td>
+              <div class="actions-inline">
+                <button type="button" class="mini-btn" onclick="editWork(${w.id})">Editar</button>
+                <button type="button" class="mini-btn" onclick="useWork(${w.id})">Usar no PDF</button>
+                <button type="button" class="mini-btn" style="color:#c0392b" onclick="delWork(${w.id})">Apagar</button>
+              </div>
+            </td>
+          </tr>
+        `;
+      }).join("") : `<tr><td colspan="7">Nenhuma obra cadastrada.</td></tr>`;
+
+      const alerts = works.filter(w => computeWorkStatus(w.inicio, w.fim).type !== "ok");
+      const banner = document.getElementById("worksAlertBanner");
+      if(!alerts.length){
+        banner.style.display = "none";
+        banner.innerHTML = "";
+      }else{
+        banner.style.display = "block";
+        banner.innerHTML = `<strong>${alerts.length} obra(s) em alerta.</strong><br>${alerts.map(w => `${escapeHtml(w.titulo)} — ${computeWorkStatus(w.inicio, w.fim).label}`).join(" • ")}`;
+      }
+    }
+
+    function updateWorkPreview(){
+      const valor = parseMoneyInput(document.getElementById("obraValorInput").value);
+      const custo = parseMoneyInput(document.getElementById("obraCustoInput").value);
+      document.getElementById("obraLucroPreview").textContent = brl(valor - custo);
+      const status = computeWorkStatus(document.getElementById("obraInicioInput").value, document.getElementById("obraFimInput").value);
+      document.getElementById("obraPrazoPreview").textContent = status.label;
+    }
+
+    window.editWork = (id) => {
+      const w = findWorkById(id); if(!w) return;
+      document.getElementById("workEditId").value = w.id;
+      document.getElementById("obraClienteSelect").value = w.clienteId || "";
+      document.getElementById("obraTituloInput").value = w.titulo || "";
+      document.getElementById("obraInicioInput").value = w.inicio || "";
+      document.getElementById("obraFimInput").value = w.fim || "";
+      document.getElementById("obraValorInput").value = w.valor || "";
+      document.getElementById("obraCustoInput").value = w.custo || "";
+      document.getElementById("obraObsInput").value = w.obs || "";
+      document.getElementById("workSubmitBtn").textContent = "Atualizar obra";
+      document.getElementById("cancelWorkEditBtn").style.display = "inline-flex";
+      updateWorkPreview();
+      activateTab("tab-obras");
+    };
+
+    window.useWork = (id) => {
+      document.getElementById("docWorkSelect").value = String(id);
+      applySelectedWorkToDoc();
+      activateTab("tab-cupom");
+    };
+
+    window.delWork = (id) => {
+      if(!confirm("Deseja apagar essa obra?")) return;
+      setWorks(getWorks().filter(w => Number(w.id) !== Number(id)));
+      renderAll();
+    };
+
+    document.getElementById("obraValorInput").addEventListener("input", updateWorkPreview);
+    document.getElementById("obraCustoInput").addEventListener("input", updateWorkPreview);
+    document.getElementById("obraInicioInput").addEventListener("change", updateWorkPreview);
+    document.getElementById("obraFimInput").addEventListener("change", updateWorkPreview);
+
+    document.getElementById("workForm").addEventListener("submit", (e) => {
+      e.preventDefault();
+      const cli = findClientById(document.getElementById("obraClienteSelect").value);
+      if(!cli) return alert("Selecione um cliente.");
+      const editId = document.getElementById("workEditId").value;
+      const obj = {
+        id: editId ? Number(editId) : Date.now(),
+        clienteId: cli.id,
+        clienteNome: cli.nome,
+        titulo: document.getElementById("obraTituloInput").value.trim(),
+        inicio: document.getElementById("obraInicioInput").value,
+        fim: document.getElementById("obraFimInput").value,
+        valor: parseMoneyInput(document.getElementById("obraValorInput").value),
+        custo: parseMoneyInput(document.getElementById("obraCustoInput").value),
+        obs: document.getElementById("obraObsInput").value.trim()
+      };
+      const arr = getWorks();
+      if(editId){
+        const idx = arr.findIndex(x => Number(x.id) === Number(editId));
+        if(idx !== -1) arr[idx] = obj;
+      }else{ arr.push(obj); }
+      setWorks(arr);
+      document.getElementById("workForm").reset();
+      document.getElementById("workEditId").value = "";
+      document.getElementById("workSubmitBtn").textContent = "Salvar obra";
+      document.getElementById("cancelWorkEditBtn").style.display = "none";
+      document.getElementById("obraInicioInput").value = todayISO();
+      document.getElementById("obraFimInput").value = todayISO();
+      updateWorkPreview();
+      renderAll();
+    });
+
+    document.getElementById("cancelWorkEditBtn").addEventListener("click", () => {
+      document.getElementById("workForm").reset();
+      document.getElementById("workEditId").value = "";
+      document.getElementById("workSubmitBtn").textContent = "Salvar obra";
+      document.getElementById("cancelWorkEditBtn").style.display = "none";
+      document.getElementById("obraInicioInput").value = todayISO();
+      document.getElementById("obraFimInput").value = todayISO();
+      updateWorkPreview();
+    });
+
+    function updateMaterialPreview(){
+      const qtd = parseIntegerInput(document.getElementById("matQtd").value);
+      const custo = parseMoneyInput(document.getElementById("matCusto").value);
+      const venda = parseMoneyInput(document.getElementById("matVenda").value);
+      document.getElementById("matLucroUnitPreview").textContent = brl(venda - custo);
+      document.getElementById("matValorInicialPreview").textContent = brl(qtd * custo);
+    }
+
+    document.getElementById("matQtd").addEventListener("input", updateMaterialPreview);
+    document.getElementById("matCusto").addEventListener("input", updateMaterialPreview);
+    document.getElementById("matVenda").addEventListener("input", updateMaterialPreview);
+
+    function renderMaterialsTable(){
+      const mats = computeStock();
+      document.getElementById("materialsTable").innerHTML = mats.length ? mats.map(m => `
+        <tr>
+          <td><strong>${escapeHtml(m.nome)}</strong><small>${escapeHtml(m.obs || "—")}</small></td>
+          <td>${m.qtd}</td>
+          <td>${brl(m.custo)}</td>
+          <td>${brl(m.venda)}</td>
+          <td>${brl(m.valorTotal)}</td>
+          <td>
+            <div class="actions-inline">
+              <button type="button" class="mini-btn" onclick="editMaterial(${m.id})">Editar</button>
+              <button type="button" class="mini-btn" style="color:#c0392b" onclick="deleteMaterial(${m.id})">Apagar</button>
+            </div>
+          </td>
+        </tr>
+      `).join("") : `<tr><td colspan="6">Nenhum material cadastrado.</td></tr>`;
+    }
+
+    window.editMaterial = (id) => {
+      const m = findMaterialById(id); if(!m) return;
+      document.getElementById("materialEditId").value = m.id;
+      document.getElementById("matNome").value = m.nome || "";
+      document.getElementById("matUnidade").value = m.unidade || "";
+      document.getElementById("matQtd").value = m.qtd || 0;
+      document.getElementById("matCusto").value = m.custo || "";
+      document.getElementById("matVenda").value = m.venda || "";
+      document.getElementById("matMinimo").value = m.minimo || "";
+      document.getElementById("matObs").value = m.obs || "";
+      document.getElementById("materialFormTitle").textContent = "Editar material";
+      document.getElementById("materialSubmitBtn").textContent = "Atualizar material";
+      document.getElementById("cancelMaterialEditBtn").style.display = "inline-flex";
+      updateMaterialPreview();
+      activateTab("tab-materiais");
+    };
+
+    window.deleteMaterial = (id) => {
+      if(!confirm("Deseja apagar esse material?")) return;
+      setMaterials(getMaterials().filter(m => Number(m.id) !== Number(id)));
+      setMovements(getMovements().filter(m => Number(m.materialId) !== Number(id)));
+      renderAll();
+    };
+
+    document.getElementById("cancelMaterialEditBtn").addEventListener("click", () => {
+      document.getElementById("materialForm").reset();
+      document.getElementById("materialEditId").value = "";
+      document.getElementById("materialFormTitle").textContent = "Cadastrar material";
+      document.getElementById("materialSubmitBtn").textContent = "Salvar material";
+      document.getElementById("cancelMaterialEditBtn").style.display = "none";
+      updateMaterialPreview();
+    });
+
+    document.getElementById("materialForm").addEventListener("submit", (e) => {
+      e.preventDefault();
+
+      const editId = document.getElementById("materialEditId").value;
+      const qtd = parseIntegerInput(document.getElementById("matQtd").value);
+      const custo = parseMoneyInput(document.getElementById("matCusto").value);
+      const venda = parseMoneyInput(document.getElementById("matVenda").value);
+      const minimo = parseIntegerInput(document.getElementById("matMinimo").value);
+
+      const obj = {
+        id: editId ? Number(editId) : Date.now(),
+        nome: document.getElementById("matNome").value.trim(),
+        unidade: document.getElementById("matUnidade").value.trim(),
+        qtd: qtd,
+        custo,
+        venda,
+        minimo,
+        obs: document.getElementById("matObs").value.trim()
+      };
+
+      if(!obj.nome) return alert("Informe o nome do material.");
+
+      const arr = getMaterials();
+
+      if(editId){
+        const idx = arr.findIndex(m => Number(m.id) === Number(editId));
+        if(idx !== -1) arr[idx] = obj;
+        setMaterials(arr);
+        alert(`Material atualizado. Estoque atual: ${qtd}`);
+      }else{
+        if(arr.some(m => String(m.nome).toLowerCase() === obj.nome.toLowerCase())){
+          return alert("Esse material já existe.");
+        }
+        arr.push(obj);
+        setMaterials(arr);
+        alert(`Material salvo com estoque inicial ${qtd}.`);
+      }
+
+      document.getElementById("materialForm").reset();
+      document.getElementById("materialEditId").value = "";
+      document.getElementById("materialFormTitle").textContent = "Cadastrar material";
+      document.getElementById("materialSubmitBtn").textContent = "Salvar material";
+      document.getElementById("cancelMaterialEditBtn").style.display = "none";
+      updateMaterialPreview();
+      renderAll();
+    });
+
+    function updateMovementPreview(){
+      const mat = findMaterialById(document.getElementById("materialSelect").value);
+      const qtd = parseIntegerInput(document.getElementById("quantidade").value);
+      const tipo = document.getElementById("tipo").value;
+      if(!mat){
+        document.getElementById("saldoPreview").textContent = "0";
+        document.getElementById("totalPreview").textContent = "R$ 0,00";
+        document.getElementById("lucroMovPreview").textContent = "R$ 0,00";
+        return;
+      }
+      const custo = parseMoneyInput(mat.custo);
+      const venda = parseMoneyInput(mat.venda);
+      document.getElementById("saldoPreview").textContent = parseIntegerInput(mat.qtd);
+      document.getElementById("totalPreview").textContent = brl(qtd * (tipo === "venda" ? venda : custo));
+      document.getElementById("lucroMovPreview").textContent = tipo === "venda" ? brl(qtd * (venda - custo)) : "R$ 0,00";
+    }
+
+    document.getElementById("materialSelect").addEventListener("change", updateMovementPreview);
+    document.getElementById("quantidade").addEventListener("input", updateMovementPreview);
+    document.getElementById("tipo").addEventListener("change", updateMovementPreview);
+
+    function renderMovementsTable(){
+      const arr = getMovements().sort((a,b) => a.data < b.data ? 1 : -1);
+      document.getElementById("movementsTable").innerHTML = arr.length ? arr.map(m => `
+        <tr>
+          <td><strong>${escapeHtml(m.material)}</strong></td>
+          <td><span class="pill ${m.tipo === "venda" ? "warn" : m.tipo === "entrada" ? "ok" : "low"}">${escapeHtml(m.tipo)}</span></td>
+          <td>${m.quantidade}</td>
+          <td>${brl(m.valorTotal)}</td>
+          <td>${brl(m.lucroTotal || 0)}</td>
+          <td>${escapeHtml(m.nota)}</td>
+        </tr>
+      `).join("") : `<tr><td colspan="6">Nenhuma movimentação.</td></tr>`;
+    }
+
+    document.getElementById("movementForm").addEventListener("submit", (e) => {
+      e.preventDefault();
+      const material = findMaterialById(document.getElementById("materialSelect").value);
+      if(!material) return alert("Selecione um material.");
+
+      const qtd = parseIntegerInput(document.getElementById("quantidade").value);
+      const tipo = document.getElementById("tipo").value;
+      if(qtd <= 0) return alert("Informe uma quantidade válida.");
+
+      const materials = getMaterials();
+      const idx = materials.findIndex(m => String(m.id) === String(material.id));
+      const saldoAtual = parseIntegerInput(materials[idx].qtd);
+
+      if((tipo === "saida" || tipo === "venda") && qtd > saldoAtual){
+        return alert(`Saldo insuficiente. Atual: ${saldoAtual}`);
+      }
+
+      if(tipo === "entrada"){ materials[idx].qtd = saldoAtual + qtd; }
+      else{ materials[idx].qtd = saldoAtual - qtd; }
+      setMaterials(materials);
+
+      const custo = parseMoneyInput(material.custo);
+      const venda = parseMoneyInput(material.venda);
+      const valorTotal = qtd * (tipo === "venda" ? venda : custo);
+      const lucroTotal = tipo === "venda" ? qtd * (venda - custo) : 0;
+
+      const movs = getMovements();
+      movs.push({
+        id: Date.now(), materialId: material.id, material: material.nome,
+        tipo, quantidade: qtd, valorTotal, lucroTotal,
+        nota: document.getElementById("nota").value.trim(),
+        fornecedor: document.getElementById("fornecedor").value.trim(),
+        data: document.getElementById("dataMov").value
+      });
+      setMovements(movs);
+
+      document.getElementById("movementForm").reset();
+      document.getElementById("dataMov").value = todayISO();
+      updateMovementPreview();
+      renderAll();
+      alert("Movimentação salva.");
+    });
+
+    function renderStockTable(){
+      const stock = computeStock();
+      const total = stock.reduce((s,i) => s + i.valorTotal, 0);
+      const profit = stock.reduce((s,i) => s + i.lucroPotencial, 0);
+      const qty = stock.reduce((s,i) => s + i.qtd, 0);
+      const low = stock.filter(i => i.low);
+
+      document.getElementById("stockValueTop").textContent = brl(total);
+      document.getElementById("stockProfitTop").textContent = brl(profit);
+      document.getElementById("stockItemsTop").textContent = stock.length;
+      document.getElementById("stockQtyTop").textContent = qty;
+
+      document.getElementById("stockTable").innerHTML = stock.length ? stock.map(i => `
+        <tr>
+          <td><strong>${escapeHtml(i.nome)}</strong></td>
+          <td>${i.qtd}</td>
+          <td>${brl(i.custo)}</td>
+          <td>${brl(i.venda)}</td>
+          <td>${brl(i.valorTotal)}</td>
+          <td>${brl(i.lucroPotencial)}</td>
+          <td><span class="pill ${i.low ? "low" : "ok"}">${i.low ? "baixo" : "ok"}</span></td>
+          <td><button type="button" class="mini-btn" onclick="editMaterial(${i.id})">Editar</button></td>
+        </tr>
+      `).join("") : `<tr><td colspan="8">Sem estoque cadastrado.</td></tr>`;
+
+      const banner = document.getElementById("lowStockBanner");
+      if(!low.length){
+        banner.style.display = "none";
+        banner.innerHTML = "";
+      }else{
+        banner.style.display = "block";
+        banner.innerHTML = `<strong>${low.length} item(ns) com estoque baixo.</strong><br>${low.map(i => `${escapeHtml(i.nome)} (${i.qtd}/${i.minimo})`).join(" • ")}`;
+      }
+    }
+
+    function applySelectedClientToDoc(){
+      const c = findClientById(document.getElementById("docClientSelect").value);
+      if(!c) return;
+      document.getElementById("clienteNome").value = c.nome || "";
+      document.getElementById("clienteCnpj").value = c.doc || "";
+      document.getElementById("clienteEndereco").value = c.endereco || "";
+    }
+
+    function applySelectedWorkToDoc(){
+      const w = findWorkById(document.getElementById("docWorkSelect").value);
+      if(!w) return;
+      document.getElementById("obraTitulo").value = w.titulo || "";
+      document.getElementById("descricaoServico").value = w.obs || w.titulo || "";
+      document.getElementById("valorRecebido").value = w.valor || "";
+      if(w.clienteId){
+        document.getElementById("docClientSelect").value = String(w.clienteId);
+        applySelectedClientToDoc();
+      }
+      if(!draftCouponItems.length && parseMoneyInput(w.valor) > 0){
+        draftCouponItems = [{
+          descricao: w.titulo,
+          qtd: 1,
+          valor: parseMoneyInput(w.valor),
+          subtotal: parseMoneyInput(w.valor)
+        }];
+        renderCouponDraft();
+      }
+    }
+
+    document.getElementById("docClientSelect").addEventListener("change", applySelectedClientToDoc);
+    document.getElementById("docWorkSelect").addEventListener("change", applySelectedWorkToDoc);
+
+    function renderCouponDraft(){
+      document.getElementById("couponItemsTable").innerHTML = draftCouponItems.length ? draftCouponItems.map((i,index) => `
+        <tr>
+          <td>${escapeHtml(i.descricao)}</td>
+          <td>${i.qtd}</td>
+          <td>${brl(i.subtotal)}</td>
+          <td><button type="button" class="mini-btn" onclick="removeCouponItem(${index})">Remover</button></td>
+        </tr>
+      `).join("") : `<tr><td colspan="4">Nenhum item inserido.</td></tr>`;
+    }
+
+    window.removeCouponItem = (index) => {
+      draftCouponItems.splice(index,1);
+      renderCouponDraft();
+    };
+
+    document.getElementById("addCouponItemBtn").addEventListener("click", () => {
+      const descricao = document.getElementById("itemDescricao").value.trim();
+      const qtd = parseIntegerInput(document.getElementById("itemQtd").value);
+      const valor = parseMoneyInput(document.getElementById("itemValor").value);
+      if(!descricao || qtd <= 0) return alert("Preencha item e quantidade.");
+      draftCouponItems.push({ descricao, qtd, valor, subtotal: qtd * valor });
+      document.getElementById("itemDescricao").value = "";
+      document.getElementById("itemQtd").value = "";
+      document.getElementById("itemValor").value = "";
+      renderCouponDraft();
+    });
+
+    function clearCouponForm(){
+      document.getElementById("couponForm").reset();
+      document.getElementById("couponEditId").value = "";
+      draftCouponItems = [];
+      document.getElementById("fechamentoData").value = todayISO();
+      document.getElementById("saveCouponBtn").textContent = "Salvar documento";
+      renderCouponDraft();
+    }
+
+    document.getElementById("clearCouponDraftBtn").addEventListener("click", clearCouponForm);
+
+    function collectCouponFormData(){
+      const clienteNome = document.getElementById("clienteNome").value.trim();
+      if(!clienteNome) throw new Error("Preencha o nome do cliente.");
+      const tipo = document.getElementById("documentType").value;
+      const totalDraft = draftCouponItems.reduce((s,i) => s + i.subtotal, 0);
+      const total = tipo === "Comprovante de Serviço"
+        ? parseMoneyInput(document.getElementById("valorRecebido").value) || totalDraft
+        : totalDraft;
+
+      return {
+        id: document.getElementById("couponEditId").value ? Number(document.getElementById("couponEditId").value) : Date.now(),
+        tipoDocumento: tipo,
+        numeroDocumento: document.getElementById("documentNumber").value.trim() || String(getCoupons().length + 1).padStart(3, "0"),
+        clienteNome,
+        clienteDoc: document.getElementById("clienteCnpj").value.trim(),
+        clienteEndereco: document.getElementById("clienteEndereco").value.trim(),
+        obraTitulo: document.getElementById("obraTitulo").value.trim(),
+        descricaoServico: document.getElementById("descricaoServico").value.trim(),
+        data: document.getElementById("fechamentoData").value,
+        itens: [...draftCouponItems],
+        total
+      };
+    }
+
+    function renderSavedCoupons(){
+      const arr = getCoupons().sort((a,b) => a.data < b.data ? 1 : -1);
+      document.getElementById("savedCouponsTable").innerHTML = arr.length ? arr.map(c => `
+        <tr>
+          <td><strong>${escapeHtml(c.clienteNome)}</strong></td>
+          <td>${escapeHtml(c.tipoDocumento)}</td>
+          <td>${escapeHtml(c.obraTitulo || "—")}</td>
+          <td>${formatDate(c.data)}</td>
+          <td>
+            <div class="actions-inline">
+              <button type="button" class="mini-btn" onclick="loadCouponToForm(${c.id})">Editar</button>
+              <button type="button" class="mini-btn" onclick="downloadCouponPdfById(${c.id})">Baixar PDF</button>
+              <button type="button" class="mini-btn" style="color:#c0392b" onclick="deleteCoupon(${c.id})">Apagar</button>
+            </div>
+          </td>
+        </tr>
+      `).join("") : `<tr><td colspan="5">Nenhum documento salvo.</td></tr>`;
+    }
+
+    window.loadCouponToForm = (id) => {
+      const c = findCouponById(id); if(!c) return;
+      document.getElementById("couponEditId").value = c.id;
+      document.getElementById("documentType").value = c.tipoDocumento || "Orçamento";
+      document.getElementById("documentNumber").value = c.numeroDocumento || "";
+      document.getElementById("clienteNome").value = c.clienteNome || "";
+      document.getElementById("clienteCnpj").value = c.clienteDoc || "";
+      document.getElementById("clienteEndereco").value = c.clienteEndereco || "";
+      document.getElementById("obraTitulo").value = c.obraTitulo || "";
+      document.getElementById("descricaoServico").value = c.descricaoServico || "";
+      document.getElementById("fechamentoData").value = c.data || todayISO();
+      document.getElementById("valorRecebido").value = c.total || "";
+      draftCouponItems = Array.isArray(c.itens) ? [...c.itens] : [];
+      document.getElementById("saveCouponBtn").textContent = "Atualizar documento";
+      renderCouponDraft();
+      activateTab("tab-cupom");
+    };
+
+    window.deleteCoupon = (id) => {
+      if(!confirm("Deseja apagar esse documento salvo?")) return;
+      setCoupons(getCoupons().filter(c => Number(c.id) !== Number(id)));
+      renderSavedCoupons();
+    };
+
+    document.getElementById("couponForm").addEventListener("submit", (e) => {
+      e.preventDefault();
+      try{
+        const obj = collectCouponFormData();
+        const arr = getCoupons();
+        const idx = arr.findIndex(c => Number(c.id) === Number(obj.id));
+        if(idx >= 0) arr[idx] = obj;
+        else arr.push(obj);
+        setCoupons(arr);
+        clearCouponForm();
+        renderSavedCoupons();
+        alert("Documento salvo. Você poderá gerar o PDF depois pelo histórico.");
+      }catch(err){
+        alert(err.message);
+      }
+    });
+
+    function numberToPortugueseCurrency(value){
+      let n = Math.floor(Number(value || 0));
+      if (n === 0) return "zero reais";
+      const units = ["","um","dois","três","quatro","cinco","seis","sete","oito","nove"];
+      const teens = ["dez","onze","doze","treze","quatorze","quinze","dezesseis","dezessete","dezoito","dezenove"];
+      const tens = ["","","vinte","trinta","quarenta","cinquenta","sessenta","setenta","oitenta","noventa"];
+      const hundreds = ["","cento","duzentos","trezentos","quatrocentos","quinhentos","seiscentos","setecentos","oitocentos","novecentos"];
+
+      function convertHundreds(num){
+        if(num === 100) return "cem";
+        let str = "";
+        const c = Math.floor(num / 100);
+        const d = num % 100;
+        if(c) str += hundreds[c];
+        if(d){
+          if(str) str += " e ";
+          if(d < 10) str += units[d];
+          else if(d < 20) str += teens[d - 10];
+          else{
+            const dz = Math.floor(d / 10);
+            const un = d % 10;
+            str += tens[dz];
+            if(un) str += " e " + units[un];
+          }
+        }
+        return str;
+      }
+
+      if(n < 1000) return `${convertHundreds(n)} reais`;
+      const mil = Math.floor(n / 1000);
+      const rest = n % 1000;
+      let s = mil === 1 ? "mil" : `${convertHundreds(mil)} mil`;
+      if(rest) s += rest < 100 ? " e " : ", " + convertHundreds(rest);
+      return `${s} reais`;
+    }
+
+    function addLogoToPDF(doc, x, y, w, h){
+      if(globalLogoBase64){
+        try{
+          doc.addImage(globalLogoBase64, "PNG", x, y, w, h);
+        }catch(e){
+          doc.setFont("helvetica", "bold");
+          doc.setFontSize(14);
+          doc.text(getSettings().companyName || "Empresa", x, y + 8);
+        }
+      } else {
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(14);
+        doc.text(getSettings().companyName || "Empresa", x, y + 8);
+      }
+    }
+
+    function drawPdfHeader(doc, company, title, data){
+      doc.setDrawColor(70,70,70);
+      doc.setLineWidth(0.4);
+      doc.roundedRect(12, 12, 186, 34, 4, 4);
+      addLogoToPDF(doc, 16, 15, 34, 22);
+
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(18);
+      doc.text(title, 190, 20, { align:"right" });
+
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(9.5);
+      doc.text(company.nome || "Empresa", 56, 20);
+      doc.text(`Responsável: ${company.responsavel || ""}`, 56, 25);
+      doc.text(`CNPJ: ${company.cnpj || ""}`, 56, 30);
+      doc.text(`Contato: ${company.contato || ""}`, 56, 35);
+      doc.text(`Data: ${formatDate(data.data)}`, 190, 30, { align:"right" });
+      doc.text(`Doc.: ${data.numeroDocumento}`, 190, 35, { align:"right" });
+    }
+
+    function drawClientBlock(doc, data){
+      doc.roundedRect(12, 52, 186, 30, 4, 4);
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(10.5);
+      doc.text("CLIENTE / CONTRATANTE", 16, 60);
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(10);
+      doc.text(`Nome: ${data.clienteNome || ""}`, 16, 68);
+      doc.text(`CPF/CNPJ: ${data.clienteDoc || ""}`, 120, 68);
+      doc.text(`Endereço: ${data.clienteEndereco || ""}`, 16, 76);
+    }
+
+    function generateBudgetPDF(doc, company, data){
+      drawPdfHeader(doc, company, "ORÇAMENTO", data);
+      drawClientBlock(doc, data);
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(10);
+      doc.text(`Referência: ${data.obraTitulo || ""}`, 16, 92);
+
+      const body = data.itens.length ? data.itens.map(i => [String(i.qtd), i.descricao, brl(i.valor), brl(i.subtotal)]) : [["1", data.descricaoServico || "Serviço", brl(data.total), brl(data.total)]];
+      doc.autoTable({
+        startY: 98,
+        theme: "grid",
+        head: [["Qtd", "Descrição", "Valor Unitário", "Subtotal"]],
+        body,
+        styles: { fontSize: 9, cellPadding: 3 },
+        headStyles: { fillColor:[88,139,53], textColor:[255,255,255] },
+        margin: { left:12, right:12 }
+      });
+
+      const y = doc.lastAutoTable.finalY + 10;
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(14);
+      doc.text(`TOTAL DO ORÇAMENTO: ${brl(data.total)}`, 190, y, { align:"right" });
+    }
+
+    function generateReceiptPDF(doc, company, data){
+      drawPdfHeader(doc, company, "RECIBO DE VENDA/SERVIÇO", data);
+      drawClientBlock(doc, data);
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(10);
+      doc.text(`Referência: ${data.obraTitulo || ""}`, 16, 92);
+
+      const body = data.itens.length ? data.itens.map(i => [String(i.qtd), i.descricao, brl(i.valor), brl(i.subtotal)]) : [["1", data.descricaoServico || "Serviço", brl(data.total), brl(data.total)]];
+      doc.autoTable({
+        startY: 98,
+        theme: "grid",
+        head: [["Qtd", "Descrição", "Valor Unitário", "Subtotal"]],
+        body,
+        styles: { fontSize: 9, cellPadding: 3 },
+        headStyles: { fillColor:[20,20,20], textColor:[255,255,255] },
+        margin: { left:12, right:12 }
+      });
+
+      const y = doc.lastAutoTable.finalY + 10;
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(14);
+      doc.text(`TOTAL RECEBIDO: ${brl(data.total)}`, 190, y, { align:"right" });
+    }
+
+    function generateProofPDF(doc, company, data){
+      drawPdfHeader(doc, company, "COMPROVANTE DE SERVIÇO", data);
+      drawClientBlock(doc, data);
+
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(11);
+      const extenso = numberToPortugueseCurrency(data.total);
+      const texto = `Eu, ${company.responsavel || "Responsável"}, inscrito no CNPJ ${company.cnpj || ""}, declaro que recebi de ${data.clienteNome || "Cliente"}, inscrito sob o documento ${data.clienteDoc || ""}, a quantia de ${brl(data.total)} (${extenso}), referente ao serviço abaixo descrito.`;
+      doc.text(doc.splitTextToSize(texto, 170), 16, 92);
+
+      doc.setFont("helvetica", "bold");
+      doc.text("Descrição do serviço:", 16, 122);
+      doc.setFont("helvetica", "normal");
+      doc.text(doc.splitTextToSize(data.descricaoServico || "Sem descrição.", 170), 16, 130);
+
+      doc.text(`Local e data: ${company.cidade || "Cidade"}, ${formatDateLong(data.data)}`, 16, 180);
+      doc.line(55, 215, 155, 215);
+      doc.setFont("helvetica", "bold");
+      doc.text(company.responsavel || "Responsável", 105, 222, { align:"center" });
+      doc.setFont("helvetica", "normal");
+      doc.text("Assinatura do responsável", 105, 228, { align:"center" });
+    }
+
+    async function generatePdfFromData(data){
+      await preloadLogoForPdf();
+      const company = getCompany();
+
+      if(!window.jspdf || !window.jspdf.jsPDF){
+        alert("Biblioteca PDF não carregou.");
+        return;
+      }
+
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF("p", "mm", "a4");
+
+      if(data.tipoDocumento === "Orçamento"){
+        generateBudgetPDF(doc, company, data);
+      }else if(data.tipoDocumento === "Recibo de Venda/Serviço"){
+        generateReceiptPDF(doc, company, data);
+      }else{
+        generateProofPDF(doc, company, data);
+      }
+
+      doc.save(`${(data.tipoDocumento || "Documento").replace(/[^\w\s]/g, "").replace(/\s+/g, "_")}_${(data.clienteNome || "Cliente").replace(/[^\w\s]/g, "").replace(/\s+/g, "_")}.pdf`);
+    }
+
+    document.getElementById("generatePdfRealBtn").addEventListener("click", async () => {
+      try{
+        const data = collectCouponFormData();
+        await generatePdfFromData(data);
+      }catch(err){
+        alert(err.message);
+      }
+    });
+
+    window.downloadCouponPdfById = async (id) => {
+      const c = findCouponById(id);
+      if(!c) return alert("Documento não encontrado.");
+      await generatePdfFromData(c);
+    };
+
+    function renderExpensesTable(){
+      const arr = getExpenses().sort((a,b) => a.data < b.data ? 1 : -1);
+      document.getElementById("expensesTable").innerHTML = arr.length ? arr.map(e => `
+        <tr>
+          <td><strong>${escapeHtml(e.desc)}</strong></td>
+          <td>${brl(e.valor)}</td>
+          <td>${formatDate(e.data)}</td>
+          <td>
+            <div class="actions-inline">
+              <button type="button" class="mini-btn" onclick="editExpense(${e.id})">Editar</button>
+              <button type="button" class="mini-btn" style="color:#c0392b" onclick="delExpense(${e.id})">Apagar</button>
+            </div>
+          </td>
+        </tr>
+      `).join("") : `<tr><td colspan="4">Nenhum custo extra salvo.</td></tr>`;
+    }
+
+    window.editExpense = (id) => {
+      const e = getExpenses().find(x => Number(x.id) === Number(id)); if(!e) return;
+      document.getElementById("expenseEditId").value = e.id;
+      document.getElementById("expDesc").value = e.desc || "";
+      document.getElementById("expValor").value = e.valor || "";
+      document.getElementById("expData").value = e.data || todayISO();
+      document.getElementById("expenseSubmitBtn").textContent = "Atualizar custo";
+      document.getElementById("cancelExpenseEditBtn").style.display = "inline-flex";
+      activateTab("tab-financeiro");
+    };
+
+    window.delExpense = (id) => {
+      if(!confirm("Deseja apagar esse custo?")) return;
+      setExpenses(getExpenses().filter(e => Number(e.id) !== Number(id)));
+      renderAll();
+    };
+
+    document.getElementById("expenseForm").addEventListener("submit", (e) => {
+      e.preventDefault();
+      const editId = document.getElementById("expenseEditId").value;
+      const obj = {
+        id: editId ? Number(editId) : Date.now(),
+        desc: document.getElementById("expDesc").value.trim(),
+        valor: parseMoneyInput(document.getElementById("expValor").value),
+        data: document.getElementById("expData").value
+      };
+      const arr = getExpenses();
+      if(editId){
+        const idx = arr.findIndex(x => Number(x.id) === Number(editId));
+        if(idx !== -1) arr[idx] = obj;
+      }else{ arr.push(obj); }
+      setExpenses(arr);
+      document.getElementById("expenseForm").reset();
+      document.getElementById("expenseEditId").value = "";
+      document.getElementById("expenseSubmitBtn").textContent = "Salvar custo";
+      document.getElementById("cancelExpenseEditBtn").style.display = "none";
+      document.getElementById("expData").value = todayISO();
+      renderAll();
+    });
+
+    document.getElementById("cancelExpenseEditBtn").addEventListener("click", () => {
+      document.getElementById("expenseForm").reset();
+      document.getElementById("expenseEditId").value = "";
+      document.getElementById("expenseSubmitBtn").textContent = "Salvar custo";
+      document.getElementById("cancelExpenseEditBtn").style.display = "none";
+      document.getElementById("expData").value = todayISO();
+    });
+
+    function renderFinanceiro(){
+      const map = {};
+      function ensure(key){ if(!map[key]) map[key] = { rO:0, rV:0, cE:0, cO:0, cX:0 }; }
+
+      getWorks().forEach(w => {
+        const k = monthKey(w.inicio || w.fim || todayISO()); ensure(k);
+        map[k].rO += parseMoneyInput(w.valor); map[k].cO += parseMoneyInput(w.custo);
+      });
+
+      getMovements().forEach(m => {
+        const k = monthKey(m.data); ensure(k);
+        if(m.tipo === "entrada") map[k].cE += parseMoneyInput(m.valorTotal);
+        if(m.tipo === "venda") map[k].rV += parseMoneyInput(m.valorTotal);
+      });
+
+      getExpenses().forEach(e => {
+        const k = monthKey(e.data); ensure(k);
+        map[k].cX += parseMoneyInput(e.valor);
+      });
+
+      const rows = Object.entries(map).sort((a,b) => {
+        const [ma,ya] = a[0].split("/");
+        const [mb,yb] = b[0].split("/");
+        return new Date(`${yb}-${mb}-01`) - new Date(`${ya}-${ma}-01`);
+      });
+
+      document.getElementById("financeTable").innerHTML = rows.length ? rows.map(([k,v]) => `
+        <tr>
+          <td><strong>${k}</strong></td>
+          <td>${brl(v.rO)}</td>
+          <td>${brl(v.rV)}</td>
+          <td>${brl(v.cE)}</td>
+          <td>${brl(v.cO)}</td>
+          <td>${brl(v.cX)}</td>
+          <td><strong>${brl(v.rO + v.rV - v.cE - v.cO - v.cX)}</strong></td>
+        </tr>
+      `).join("") : `<tr><td colspan="7">Sem dados financeiros.</td></tr>`;
+
+      const current = map[monthKey(todayISO())] || { rO:0, rV:0, cE:0, cO:0, cX:0 };
+      const receita = current.rO + current.rV;
+      const despesa = current.cE + current.cO + current.cX;
+      document.getElementById("monthReceita").textContent = brl(receita);
+      document.getElementById("monthDespesas").textContent = brl(despesa);
+      document.getElementById("monthLucro").textContent = brl(receita - despesa);
+      document.getElementById("monthWorksAlert").textContent = getWorks().filter(w => computeWorkStatus(w.inicio, w.fim).type !== "ok").length;
+    }
+
+    document.getElementById("settingsForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+
+      const pass = document.getElementById("cfgPass").value.trim();
+      const confirm = document.getElementById("cfgPassConfirm").value.trim();
+      if(pass !== confirm) return alert("A confirmação da senha está diferente.");
+
+      const logoFile = document.getElementById("cfgLogoFile").files[0];
+      let logoDataUrl = getSettings().logoDataUrl || "";
+
+      if(logoFile){
+        logoDataUrl = await new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result);
+          reader.onerror = reject;
+          reader.readAsDataURL(logoFile);
+        });
+      }
+
+      setSettings({
+        companyName: document.getElementById("cfgCompanyName").value.trim(),
+        responsible: document.getElementById("cfgResponsible").value.trim(),
+        cnpj: document.getElementById("cfgCnpj").value.trim(),
+        contact: document.getElementById("cfgContact").value.trim(),
+        address: document.getElementById("cfgAddress").value.trim(),
+        city: document.getElementById("cfgCity").value.trim(),
+        username: document.getElementById("cfgUser").value.trim(),
+        password: pass,
+        logoDataUrl
+      });
+
+      applyBranding();
+      fillSettingsForm();
+      await preloadLogoForPdf();
+      alert("Configurações salvas com sucesso.");
+    });
+
+    document.getElementById("removeCustomLogoBtn").addEventListener("click", async () => {
+      if(!confirm("Deseja remover a logo personalizada e voltar para a Logo.png local?")) return;
+      setSettings({ logoDataUrl: "" });
+      document.getElementById("cfgLogoFile").value = "";
+      applyBranding();
+      await preloadLogoForPdf();
+      alert("Logo personalizada removida.");
+    });
+
+    document.getElementById("goDocsBtn").addEventListener("click", () => activateTab("tab-cupom"));
+
+    function renderAll(){
+      applyBranding();
+      fillSettingsForm();
+      refreshClientSelects();
+      refreshWorkSelects();
+      refreshMaterialSelects();
+      renderClientsTable();
+      renderWorksTable();
+      renderMaterialsTable();
+      renderMovementsTable();
+      renderStockTable();
+      renderSavedCoupons();
+      renderExpensesTable();
+      renderFinanceiro();
+      updateWorkPreview();
+      updateMaterialPreview();
+      updateMovementPreview();
+      renderCouponDraft();
+    }
+
+    document.getElementById("dataMov").value = todayISO();
+    document.getElementById("fechamentoData").value = todayISO();
+    document.getElementById("expData").value = todayISO();
+    document.getElementById("obraInicioInput").value = todayISO();
+    document.getElementById("obraFimInput").value = todayISO();
+
+    applyBranding();
+    preloadLogoForPdf();
+
+    const session = getJson(SESSION_KEY, null);
+    if(session && session.logged){
+      renderAll();
+      showApp(session.user || getSettings().username || "admin");
+    }else{
+      applyBranding();
+      fillSettingsForm();
+      showLogin();
+    }
+  </script>
+</body>
+</html>
+ 

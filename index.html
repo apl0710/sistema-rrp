@@ -273,7 +273,7 @@
         </div>
       </div>
 
-      <div class="login-side">
+          <div class="login-side" style="display: none;">
         <div class="login-kicker">ERP offline personalizável</div>
         <h1 id="loginSideTitle">Gestão da empresa.</h1>
         <p>
@@ -943,7 +943,7 @@ db.collection("erp_data").doc("main_store").onSnapshot((docSnapshot) => {
       document.getElementById("loginScreen").style.display = "";
       document.getElementById("appShell").classList.remove("active");
       const s = getSettings();
-      document.getElementById("loginHintBox").innerHTML = `<strong>Login atual:</strong><br>Usuário: <strong>${escapeHtml(s.username)}</strong><br>Senha: <strong>${escapeHtml(s.password)}</strong>`;
+      document.getElementById("loginHintBox").innerHTML = "";
     }
 
     document.getElementById("loginForm").addEventListener("submit", (e) => {

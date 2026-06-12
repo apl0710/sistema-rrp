@@ -899,7 +899,7 @@ db.collection("erp_data").doc("main_store").onSnapshot((docSnapshot) => {
           globalLogoBase64 = null;
           resolve();
         };
-        img.src = "https://cdn-icons-png.flaticon.com/512/3063/3063822.png";
+        img.src = settings.fallbackLogo || "Logo.png";
       });
     }
 

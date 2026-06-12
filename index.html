@@ -2,6 +2,8 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
+  <link rel="manifest" href="manifest.json">
+  <meta name="apple-mobile-web-app-capable" content="yes">
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
   <meta charset="UTF-8" />
@@ -258,7 +260,7 @@
             <label for="loginUser">Usuário</label>
             <input class="input" id="loginUser" type="text" placeholder="Digite seu usuário" required>
           </div>
-          <div class="field">
+<div class="field">
             <label for="loginPass">Senha</label>
             <input class="input" id="loginPass" type="password" placeholder="Digite sua senha" required>
           </div>
@@ -271,6 +273,14 @@
           Usuário: <strong>admin</strong><br>
           Senha: <strong>1234</strong>
         </div>
+
+        <!-- INÍCIO DA LOGO APL -->
+        <div style="text-align: center; margin-top: 30px;">
+          <p style="font-size: 14px; font-weight: 500; color: #666; margin-bottom: 10px;">Desenvolvido por:</p>
+          <img src="logo_apl.png" alt="Logo APL" style="max-height: 130px; opacity: 1; max-width: 100%;">
+        </div>
+        <!-- FIM DA LOGO APL -->
+
       </div>
 
           <div class="login-side" style="display: none;">
@@ -1995,7 +2005,7 @@ db.collection("erp_data").doc("main_store").onSnapshot((docSnapshot) => {
     document.getElementById("obraInicioInput").value = todayISO();
     document.getElementById("obraFimInput").value = todayISO();
 
-    applyBranding();
+  applyBranding();
     preloadLogoForPdf();
 
     const session = getJson(SESSION_KEY, null);
@@ -2007,7 +2017,19 @@ db.collection("erp_data").doc("main_store").onSnapshot((docSnapshot) => {
       fillSettingsForm();
       showLogin();
     }
+
+    // REGISTRO DO SERVICE WORKER (PARA O APP INSTALAR E FUNCIONAR OFFLINE)
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('sw.js')
+          .then(registration => {
+            console.log('App pronto para instalar.', registration.scope);
+          })
+          .catch(error => {
+            console.log('Erro no App:', error);
+          });
+      });
+    }
   </script>
 </body>
 </html>
- 

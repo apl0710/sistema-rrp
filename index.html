@@ -1,3 +1,4 @@
+ 
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -5,10 +6,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>RRP Reformas</title>
-  <link rel="manifest" href="./manifest.json">
-<meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-capable" content="yes">
+  <title>RRP Reformas — ERP Offline</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -268,13 +266,14 @@
           <button type="submit" class="btn btn-primary" style="width:100%">Entrar</button>
         </form>
 
-        <div style="text-align: center; margin-top: 40px; padding-bottom: 20px;">
-    <span style="font-size: 12px; color: gray;">Tecnologia e Gestão por:</span><br>
-    <img src="logo_apl.png" alt="APL Sistemas" style="width: 120px; margin-top: 10px;">
-</div>
+        <div class="login-demo" id="loginHintBox">
+          <strong>Login padrão para teste:</strong><br>
+          Usuário: <strong>admin</strong><br>
+          Senha: <strong>1234</strong>
+        </div>
       </div>
 
-      <div class="login-slide" style="display: none;">
+      <div class="login-side">
         <div class="login-kicker">ERP offline personalizável</div>
         <h1 id="loginSideTitle">Gestão da empresa.</h1>
         <p>
@@ -300,7 +299,7 @@
       <div class="container topbar-inner">
         <div class="brand-wrap">
           <div class="brand-logo" aria-label="Logo da empresa">
-            <img class="rrp-logo-img" src="https://cdn-icons-png.flaticon.com/512/3063/3063822.png" alt="Logo da empresa" onerror="this.src='https://cdn-icons-png.flaticon.com/512/3063/3063822.png';">
+            <img class="rrp-logo-img" alt="Logo da empresa">
           </div>
           <div class="brand-text">
             <strong class="brand" id="brandNameTop">RRP Reformas</strong>
@@ -2008,7 +2007,7 @@ db.collection("erp_data").doc("main_store").onSnapshot((docSnapshot) => {
       fillSettingsForm();
       showLogin();
     }
-  <script>
-if('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('sw.js');
-}
+  </script>
+</body>
+</html>
+ 

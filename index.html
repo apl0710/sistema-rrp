@@ -2006,7 +2006,11 @@ db.collection("erp_data").doc("main_store").onSnapshot((docSnapshot) => {
       fillSettingsForm();
       showLogin();
     }
-  </script>
+  <script>
+if('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw.js');
+}
+</script>
 </body>
 </html>
  

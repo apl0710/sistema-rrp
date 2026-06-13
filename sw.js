@@ -2,10 +2,10 @@ const CACHE_NAME = 'rrp-erp-v1';
 
 // O que ele vai salvar no celular para abrir rápido
 const urlsToCache = [
-  './',
-  './index.html',
-  './logo_apl.png',
-  './logoapp.png'
+  '/sistema-rrp/',
+  '/sistema-rrp/index.html',
+  '/sistema-rrp/logo_apl.png',
+  '/sistema-rrp/logoapp.png'
 ];
 
 self.addEventListener('install', event => {
@@ -17,10 +17,9 @@ self.addEventListener('install', event => {
 
 self.addEventListener('fetch', event => {
   event.respondWith(
-    caches.match(event.request)
-      .then(response => {
-        // Se já tem no celular, devolve rápido. Se não, baixa da net.
-        return response || fetch(event.request);
-      })
+    caches.match(event.request).then(response => {
+      // Se já tem no celular, devolve rápido. Se não, baixa da net.
+      return response || fetch(event.request);
+    })
   );
 });
